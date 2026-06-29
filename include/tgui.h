@@ -28,9 +28,15 @@ int tguiInit(TGUI_FLAG flag);
 
 #define TGUI_PIXEL_COLOR_CH_RBLACK "\033[0;90m"
 #define TGUI_PIXEL_COLOR_CH_RRED "\033[0;91m"
+#define TGUI_PIXEL_COLOR_CH_RGREEN "\033[0;92m"
+#define TGUI_PIXEL_COLOR_CH_RBLUE "\033[0;94m"
+#define TGUI_PIXEL_COLOR_CH_RWHITE "\033[0;97m"
 
 #define TGUI_PIXEL_COLOR_CH_BBLACK "\033[1;90m"
 #define TGUI_PIXEL_COLOR_CH_BRED "\033[1;91m"
+#define TGUI_PIXEL_COLOR_CH_BGREEN "\033[1;92m"
+#define TGUI_PIXEL_COLOR_CH_BBLUE "\033[1;94m"
+#define TGUI_PIXEL_COLOR_CH_BWHITE "\033[1;97m"
 
 #define TGUI_PIXEL_COLOR_BG_RBLACK "\033[0;40m"
 #define TGUI_PIXEL_COLOR_BG_RRED "\033[0;41m"
@@ -69,6 +75,9 @@ typedef struct TGUI_CONFIG {
 
 	char fill_char;
 
+	int is_opaque; // ignore totally .fill_char in case it's 0
+		       // == 0 => TGUI_WIN_TRANSPARENT
+		       // == 1 => TGUI_WIN_OPAQUE
 	int has_border;
 } TGUI_CONFIG;
 
@@ -82,11 +91,40 @@ typedef enum TGUI_WIN_ATTR {
 	TGUI_ATTR_PXA_COLOR,
 	TGUI_ATTR_PXA_FILL_CHAR,
 
+	TGUI_ATTR_WIN_IS_OPAQUE,
 	TGUI_ATTR_WIN_HAS_BORDER,
+	TGUI_ATTR_WIN_POSITION,
 } TGUI_WIN_ATTR;
 
 void tguiSetGlobAttr(TGUI_GLOB_ATTR attr, ...);
 void tguiSetWinAttr(TGUI_WIN_ATTR attr, ...);
+
+// === ENTITIES
+// for entities it's different, since most of it is an object with different w and h
+// also, different colors, for sprite, maybe image integration? ( BMP-PARSER or JPEG )
+
+typedef struct TGUI_ENTITY {
+
+} TGUI_ENTITY;
+
+// each window will have it's own entities
+typedef struct TGUI_ENTITIES {
+	int size; // amount of entities to be there
+	TGUI_ENTITY* ent;
+} TGUI_ENTITIES;
+
+// === WIDGET
+
+typedef enum TGUI_WIDGET_TYPE {
+	TGUI_WIDGET_TEXT,
+	// TGUI_WIDGET_BUTTON, // don't think I'll be using pretty soon
+} TGUI_WIDGET_TYPE;
+
+typedef struct TGUI_WIDGET {
+	int x, y;
+	int width, height;
+	TGUI_WIDGET_TYPE type;
+} TGUI_WIDGET;
 
 // === WINDOW
 
@@ -94,22 +132,29 @@ typedef struct TGUI_WIN {
 	int x, y;
 	int width;
 	int height;
+	int depth; // not used yet
 	TGUI_PIXEL_ARRAY* pxa;
 	TGUI_CONFIG config;
+
+	TGUI_WIDGET* widget;
+	TGUI_ENTITIES* entities;
 } TGUI_WIN;
 
 typedef enum TGUI_WIN_FLAG {
-	TGUI_WIN_BLANK,
-	TGUI_WIN_FILLED,
+	TGUI_WIN_TRANSPARENT,
+	TGUI_WIN_OPAQUE, // will be pulling TGUI_WIN_BLANK from here
+			 // probably setting it's "blankness" from their config
 } TGUI_WIN_FLAG;
 
 TGUI_WIN* tguiCreateWindow(int x, int y, int width, int height, TGUI_WIN_FLAG flag);
 
-static void tguiFillPixelArray(TGUI_WIN* win);
+static int tguiFillPixelArray(TGUI_WIN* win);
 static void tguiFillPixelCharArray(TGUI_WIN* win, char c);
 static void tguiFillPixelColorArray(TGUI_WIN* win, TGUI_PIXEL_COLOR color);
 
 int tguiUpdate(TGUI_WIN* win, TGUI_WIN_ATTR attr, ...);
+
+int tguiWinDestroy(TGUI_WIN* win);
 
 // === RENDER
 

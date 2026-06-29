@@ -1,5 +1,6 @@
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "../include/tgui.h"
 
@@ -35,11 +36,13 @@ TGUI_WIN* tguiCreateWindow(int x, int y, int width, int height, TGUI_WIN_FLAG fl
 
 	switch (flag) {
 		default:
-		case TGUI_WIN_BLANK:
+		case TGUI_WIN_OPAQUE: // "blankness" set from here
+			win->config.is_opaque = 1;
 			win->config.fill_char = ' ';
 			tguiFillPixelArray(win);
 		break;
-		case TGUI_WIN_FILLED:
+		case TGUI_WIN_TRANSPARENT:
+			win->config.is_opaque = 0;
 			tguiFillPixelArray(win);
 		break;
 	}
@@ -47,9 +50,14 @@ TGUI_WIN* tguiCreateWindow(int x, int y, int width, int height, TGUI_WIN_FLAG fl
 	return win;
 }
 
-static void tguiFillPixelArray(TGUI_WIN *win) {
+static int tguiFillPixelArray(TGUI_WIN *win) {
+	if (win->config.is_opaque == 0) { // then it's transparent
+		return 1; // return true since pixel array could be filled succesfully
+	}
 	tguiFillPixelCharArray(win, win->config.fill_char);
 	tguiFillPixelColorArray(win, win->config.color);
+
+	return 1; // pixel array filled succesfully
 }
 
 static void tguiFillPixelCharArray(TGUI_WIN* win, char c) {
@@ -77,10 +85,29 @@ int tguiUpdate(TGUI_WIN *win, TGUI_WIN_ATTR attr, ...) {
 			win->config.fill_char = va_arg(args, int);
 			tguiFillPixelCharArray(win, win->config.fill_char);
 			break;
+
+		case TGUI_ATTR_WIN_IS_OPAQUE:
+			//win->config.fill_char = ' ';
+			win->config.is_opaque = va_arg(args, int);
+			if (win->config.is_opaque == 1) {
+				tguiFillPixelColorArray(win, win->config.color);
+				tguiFillPixelCharArray(win, win->config.fill_char);
+			}
+		case TGUI_ATTR_WIN_HAS_BORDER:
+			// not yet implemented
+			break;
+		default:
+			break;
 	}
 
 	va_end(args);
 	return TGUI_SUCCESS; // was able to succesfully update, but no error handling yet
+}
+
+int tguiWinDestroy(TGUI_WIN *win) {
+	// Every malloc on *win is:
+	free(win);
+	return TGUI_SUCCESS;
 }
 
 // ===
@@ -110,6 +137,9 @@ void tguiSetWinAttr(TGUI_WIN_ATTR attr, ...) {
 			config.fill_char = va_arg(args, int);
 			break;
 
+		case TGUI_ATTR_WIN_IS_OPAQUE:
+			config.is_opaque = va_arg(args, int);
+			break;
 		case TGUI_ATTR_WIN_HAS_BORDER:
 			config.has_border = va_arg(args, int);
 			break;
@@ -119,27 +149,26 @@ void tguiSetWinAttr(TGUI_WIN_ATTR attr, ...) {
 	va_end(args);
 }
 
-/*
-int tguiUpdate(TGUI_WIN *win, TGUI_WIN_ATTR attr, ...) {
-	va_list args;
-	va_start(args, attr);
-
-	switch (attr) {
-		case TGUI_ATTR_PXA_COLOR:
-			win->config.color = va_arg(args, TGUI_PIXEL_COLOR);
-	}
-	return TGUI_SUCCESS;
-}
-*/
-// ===
+// === RENDER
 
 int tguiRender(TGUI_WIN* win) {
 	int i = 0;
 
 	for (int h = 0; h < win->height; h++) {
-		printf("\033[%d;%dH", win->y + h, win->x); // change cursor position | same as setting x and y
+		int c_pos[2] = {
+			win->y + h,
+			win->x
+		};
+
+		printf("\033[%d;%dH", c_pos[0], c_pos[1]); // change cursor position | same as setting x and y
 		for (int w = 0; w < win->width; w++) {
-			printf("%s%c", win->pxa->px[i].color, win->pxa->px[i].c);
+			// check if win->config.is_opaque == 0 and if win->pxa->px[i] isn't inside any entity / widget
+			// if not, just move cursor pos to +1
+			if (win->config.is_opaque == 0) {
+				printf("\033[%d;%dH", c_pos[0] + 1, c_pos[1]);
+			} else {
+				printf("%s%c", win->pxa->px[i].color, win->pxa->px[i].c);
+			}
 			i++;
 		}
 		//printf("b");
