@@ -3,7 +3,7 @@
 
 #include "../include/tgui.h"
 
-static TGUI_CONFIG GLOBAL_CONF;
+static TGUI_CONFIG glob_conf;
 static TGUI_CONFIG config;
 
 int tguiInit(TGUI_FLAG flag) {
@@ -55,14 +55,24 @@ static void tguiFillPixelArray(TGUI_WIN* win, char c) {
 
 // ===
 
-void tguiSetWinAttr(TGUI_ATTR attr, ...) {
+void tguiSetGlobAttr(TGUI_GLOB_ATTR attr, ...) {
 	va_list args;
 	va_start(args, attr);
 
 	switch (attr) {
 		case TGUI_ATTR_CLEAR_COLOR:
-			config.clear_color = va_arg(args, TGUI_PIXEL_COLOR);
+			glob_conf.clear_color = va_arg(args, TGUI_PIXEL_COLOR);
 			break;
+	}
+
+	va_end(args);
+}
+
+void tguiSetWinAttr(TGUI_WIN_ATTR attr, ...) {
+	va_list args;
+	va_start(args, attr);
+
+	switch (attr) {
 		case TGUI_ATTR_PXA_COLOR:
 			config.color = va_arg(args, TGUI_PIXEL_COLOR);
 			break;
@@ -96,5 +106,5 @@ int tguiRender(TGUI_WIN* win) {
 }
 
 void tguiClear() {
-	printf("%s\033[2J\033[1H", GLOBAL_CONF.clear_color); // framebuffer size supports current a fixed size
+	printf("%s\033[2J\033[1H", glob_conf.clear_color); // framebuffer size supports current a fixed size
 }

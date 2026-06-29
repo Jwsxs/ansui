@@ -60,14 +60,16 @@ typedef struct TGUI_PIXEL_ARRAY {
 	TGUI_PIXEL* px;
 } TGUI_PIXEL_ARRAY;
 
-typedef enum TGUI_ATTR {
+typedef enum TGUI_GLOB_ATTR {
 	TGUI_ATTR_CLEAR_COLOR,
+} TGUI_GLOB_ATTR;
 
+typedef enum TGUI_WIN_ATTR {
 	TGUI_ATTR_PXA_COLOR,
 	TGUI_ATTR_PXA_FILL_CHAR,
 
 	TGUI_ATTR_WIN_HAS_BORDER,
-} TGUI_ATTR;
+} TGUI_WIN_ATTR;
 
 typedef struct TGUI_CONFIG {
 	TGUI_PIXEL_COLOR clear_color;
@@ -103,7 +105,8 @@ static void tguiFillPixelArray(TGUI_WIN* win, char c);
 
 // ===
 
-void tguiSetWinAttr(TGUI_ATTR attr, ...);
+void tguiSetGlobAttr(TGUI_GLOB_ATTR attr, ...);
+void tguiSetWinAttr(TGUI_WIN_ATTR attr, ...);
 
 // ===
 
