@@ -16,10 +16,13 @@ int tguiInit(TGUI_FLAG flag) {
 
 // ===
 
-TGUI_WIN* tguiCreateWindow(int width, int height, TGUI_WIN_FLAG flag) {
+TGUI_WIN* tguiCreateWindow(int x, int y, int width, int height, TGUI_WIN_FLAG flag) {
 	TGUI_WIN* win = malloc(sizeof(TGUI_WIN));
 	win->width = width;
 	win->height = height;
+
+	win->x = x;
+	win->y = y;
 
 	TGUI_PIXEL_ARRAY* pxa = malloc(sizeof(TGUI_PIXEL_ARRAY));
 	win->pxa = pxa;
@@ -33,24 +36,51 @@ TGUI_WIN* tguiCreateWindow(int width, int height, TGUI_WIN_FLAG flag) {
 	switch (flag) {
 		default:
 		case TGUI_WIN_BLANK:
-			tguiFillPixelArray(win, ' ');
+			win->config.fill_char = ' ';
+			tguiFillPixelArray(win);
 		break;
 		case TGUI_WIN_FILLED:
-			tguiFillPixelArray(win, config.fill_char);
+			tguiFillPixelArray(win);
 		break;
 	}
 	
 	return win;
 }
 
-static void tguiFillPixelArray(TGUI_WIN* win, char c) {
-	for (int i = 0; i < win->pxa->size; i++) {
-		if (config.has_border) {
+static void tguiFillPixelArray(TGUI_WIN *win) {
+	tguiFillPixelCharArray(win, win->config.fill_char);
+	tguiFillPixelColorArray(win, win->config.color);
+}
 
-		}
-		win->pxa->px[i].c = c;
+static void tguiFillPixelCharArray(TGUI_WIN* win, char c) {
+	for (int i = 0; i < win->pxa->size; i++) {
+		win->pxa->px[i].c = win->config.fill_char;
+	}
+}
+
+static void tguiFillPixelColorArray(TGUI_WIN* win, TGUI_PIXEL_COLOR color) {
+	for (int i = 0; i < win->pxa->size; i++) {
 		win->pxa->px[i].color = win->config.color;
 	}
+}
+
+int tguiUpdate(TGUI_WIN *win, TGUI_WIN_ATTR attr, ...) {
+	va_list args;
+	va_start(args, attr);
+
+	switch (attr) {
+		case TGUI_ATTR_PXA_COLOR:
+			win->config.color = va_arg(args, TGUI_PIXEL_COLOR);
+			tguiFillPixelColorArray(win, win->config.color);
+			break;
+		case TGUI_ATTR_PXA_FILL_CHAR:
+			win->config.fill_char = va_arg(args, int);
+			tguiFillPixelCharArray(win, win->config.fill_char);
+			break;
+	}
+
+	va_end(args);
+	return TGUI_SUCCESS; // was able to succesfully update, but no error handling yet
 }
 
 // ===
@@ -89,11 +119,25 @@ void tguiSetWinAttr(TGUI_WIN_ATTR attr, ...) {
 	va_end(args);
 }
 
+/*
+int tguiUpdate(TGUI_WIN *win, TGUI_WIN_ATTR attr, ...) {
+	va_list args;
+	va_start(args, attr);
+
+	switch (attr) {
+		case TGUI_ATTR_PXA_COLOR:
+			win->config.color = va_arg(args, TGUI_PIXEL_COLOR);
+	}
+	return TGUI_SUCCESS;
+}
+*/
 // ===
 
 int tguiRender(TGUI_WIN* win) {
 	int i = 0;
+
 	for (int h = 0; h < win->height; h++) {
+		printf("\033[%d;%dH", win->y + h, win->x); // change cursor position | same as setting x and y
 		for (int w = 0; w < win->width; w++) {
 			printf("%s%c", win->pxa->px[i].color, win->pxa->px[i].c);
 			i++;

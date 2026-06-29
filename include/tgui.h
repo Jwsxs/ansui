@@ -11,7 +11,7 @@
 #define TGUI_SUCCESS 0
 #define TGUI_ERROR -1
 
-// ===
+// === FLAG
 
 typedef enum TGUI_FLAG {
 	TGUI_FLAG_NONE,
@@ -19,7 +19,7 @@ typedef enum TGUI_FLAG {
 
 int tguiInit(TGUI_FLAG flag);
 
-// ===
+// === PIXEL
 
 // TGUI_PIXEL_COLOR_X_YC
 // X => BACKGROUND OR TEXT
@@ -60,6 +60,20 @@ typedef struct TGUI_PIXEL_ARRAY {
 	TGUI_PIXEL* px;
 } TGUI_PIXEL_ARRAY;
 
+// === CONFIG
+
+typedef struct TGUI_CONFIG {
+	TGUI_PIXEL_COLOR clear_color;
+
+	TGUI_PIXEL_COLOR color;
+
+	char fill_char;
+
+	int has_border;
+} TGUI_CONFIG;
+
+// === ATTRIBUTES
+
 typedef enum TGUI_GLOB_ATTR {
 	TGUI_ATTR_CLEAR_COLOR,
 } TGUI_GLOB_ATTR;
@@ -71,23 +85,13 @@ typedef enum TGUI_WIN_ATTR {
 	TGUI_ATTR_WIN_HAS_BORDER,
 } TGUI_WIN_ATTR;
 
-typedef struct TGUI_CONFIG {
-	TGUI_PIXEL_COLOR clear_color;
-	
-	TGUI_PIXEL_COLOR color;
-	
-	char fill_char;
+void tguiSetGlobAttr(TGUI_GLOB_ATTR attr, ...);
+void tguiSetWinAttr(TGUI_WIN_ATTR attr, ...);
 
-	int has_border;
-} TGUI_CONFIG;
-
-#define _GEN_TYPE X
-#define _GEN_VALUE Y
-
-
-// ===
+// === WINDOW
 
 typedef struct TGUI_WIN {
+	int x, y;
 	int width;
 	int height;
 	TGUI_PIXEL_ARRAY* pxa;
@@ -99,16 +103,15 @@ typedef enum TGUI_WIN_FLAG {
 	TGUI_WIN_FILLED,
 } TGUI_WIN_FLAG;
 
-TGUI_WIN* tguiCreateWindow(int width, int height, TGUI_WIN_FLAG flag);
+TGUI_WIN* tguiCreateWindow(int x, int y, int width, int height, TGUI_WIN_FLAG flag);
 
-static void tguiFillPixelArray(TGUI_WIN* win, char c);
+static void tguiFillPixelArray(TGUI_WIN* win);
+static void tguiFillPixelCharArray(TGUI_WIN* win, char c);
+static void tguiFillPixelColorArray(TGUI_WIN* win, TGUI_PIXEL_COLOR color);
 
-// ===
+int tguiUpdate(TGUI_WIN* win, TGUI_WIN_ATTR attr, ...);
 
-void tguiSetGlobAttr(TGUI_GLOB_ATTR attr, ...);
-void tguiSetWinAttr(TGUI_WIN_ATTR attr, ...);
-
-// ===
+// === RENDER
 
 int tguiRender(TGUI_WIN* win);
 
