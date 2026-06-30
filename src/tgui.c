@@ -2,17 +2,53 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// It's better to handle the initialization stuff outside this file
+// Organization and can be better written sometimes
 #include "../include/tgui.h"
 
 static TGUI_CONFIG glob_conf;
 static TGUI_CONFIG config;
 
-int tguiInit(TGUI_FLAG flag) {
-	switch (flag) {
-		case TGUI_FLAG_NONE:
+// === TGUI_INIT_H
+
+
+// ===
+
+void tguiSetGlobAttr(TGUI_GLOB_ATTR attr, ...) {
+	va_list args;
+	va_start(args, attr);
+
+	switch (attr) {
+		case TGUI_ATTR_CLEAR_COLOR:
+			glob_conf.clear_color = va_arg(args, TGUI_PIXEL_COLOR);
 			break;
 	}
-	return TGUI_SUCCESS;
+
+	va_end(args);
+}
+
+void tguiSetWinAttr(TGUI_WIN_ATTR attr, ...) {
+	va_list args;
+	va_start(args, attr);
+
+	switch (attr) {
+		case TGUI_ATTR_PXA_COLOR:
+			config.color = va_arg(args, TGUI_PIXEL_COLOR);
+			break;
+		case TGUI_ATTR_PXA_FILL_CHAR:
+			config.fill_char = va_arg(args, int);
+			break;
+
+		case TGUI_ATTR_WIN_IS_OPAQUE:
+			config.is_opaque = va_arg(args, int);
+			break;
+		case TGUI_ATTR_WIN_HAS_BORDER:
+			config.has_border = va_arg(args, int);
+			break;
+
+	}
+
+	va_end(args);
 }
 
 // ===
@@ -106,47 +142,15 @@ int tguiUpdate(TGUI_WIN *win, TGUI_WIN_ATTR attr, ...) {
 
 int tguiWinDestroy(TGUI_WIN *win) {
 	// Every malloc on *win is:
+	free(win->pxa->px);
+	free(win->pxa);
 	free(win);
 	return TGUI_SUCCESS;
 }
 
-// ===
-
-void tguiSetGlobAttr(TGUI_GLOB_ATTR attr, ...) {
-	va_list args;
-	va_start(args, attr);
-
-	switch (attr) {
-		case TGUI_ATTR_CLEAR_COLOR:
-			glob_conf.clear_color = va_arg(args, TGUI_PIXEL_COLOR);
-			break;
-	}
-
-	va_end(args);
-}
-
-void tguiSetWinAttr(TGUI_WIN_ATTR attr, ...) {
-	va_list args;
-	va_start(args, attr);
-
-	switch (attr) {
-		case TGUI_ATTR_PXA_COLOR:
-			config.color = va_arg(args, TGUI_PIXEL_COLOR);
-			break;
-		case TGUI_ATTR_PXA_FILL_CHAR:
-			config.fill_char = va_arg(args, int);
-			break;
-
-		case TGUI_ATTR_WIN_IS_OPAQUE:
-			config.is_opaque = va_arg(args, int);
-			break;
-		case TGUI_ATTR_WIN_HAS_BORDER:
-			config.has_border = va_arg(args, int);
-			break;
-
-	}
-
-	va_end(args);
+int tguiQuit() {
+	// Free memory got from tguiInit();
+	return TGUI_SUCCESS;
 }
 
 // === RENDER

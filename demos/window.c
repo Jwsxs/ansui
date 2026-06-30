@@ -3,6 +3,7 @@
 
 int main() {
 	// Initializing it by calling with TGUI_FLAG => #_NONE for none
+	// Will not be checking terminal info => check ./demos/uinfo_retrieval.c for demo of getting user's terminal width / height
 	tguiInit(TGUI_FLAG_NONE);
 
 	// TGUI_ATTR_CLEAR_COLOR set as TGUI_PIXEL_RESET_COLOR by default
@@ -53,7 +54,7 @@ int main() {
 		tguiRender(win3);
 		
 		if (frame > 5) {
-			tguiUpdate(win2, TGUI_ATTR_PXA_COLOR, TGUI_PIXEL_COLOR_BG_BGREEN);
+			tguiUpdate(win2, TGUI_ATTR_PXA_COLOR, TGUI_PIXEL_COLOR_CH_BGREEN);
 			tguiUpdate(win2, TGUI_ATTR_PXA_FILL_CHAR, 'C');
 		}
 

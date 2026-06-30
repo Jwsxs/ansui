@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+// ./src/tgui_init.c
+#include <sys/ioctl.h>
+
 #ifndef TGUI_H
 #define TGUI_H
 
@@ -11,13 +14,20 @@
 #define TGUI_SUCCESS 0
 #define TGUI_ERROR -1
 
-// === FLAG
+#define TGUI_INIT_H
+#ifdef TGUI_INIT_H
+
+static struct TGUI_UINFO {
+	struct winsize* ws; // Stuff retrieved from getTermSize() => ./src/tgui_init.c
+} TGUI_UINFO;
 
 typedef enum TGUI_FLAG {
 	TGUI_FLAG_NONE,
 } TGUI_FLAG;
 
-int tguiInit(TGUI_FLAG flag);
+void* tguiInit(TGUI_FLAG flag);
+
+#endif // TGUI_INIT_H
 
 // === PIXEL
 
@@ -155,6 +165,8 @@ static void tguiFillPixelColorArray(TGUI_WIN* win, TGUI_PIXEL_COLOR color);
 int tguiUpdate(TGUI_WIN* win, TGUI_WIN_ATTR attr, ...);
 
 int tguiWinDestroy(TGUI_WIN* win);
+
+int tguiQuit();
 
 // === RENDER
 
