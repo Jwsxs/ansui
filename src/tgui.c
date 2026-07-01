@@ -2,15 +2,48 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// It's better to handle the initialization stuff outside this file
-// Organization and can be better written sometimes
 #include "../include/tgui.h"
 
-static TGUI_CONFIG glob_conf;
-static TGUI_CONFIG config;
+/*
+ * AS A MONO-HEADER LIBRARY,
+ == ALL INTERNAL FUNCTIONS STARTS WITH __
+ == ALL FOR PUBLIC USE IS NORMAL, SELF-INDUCING
+ == all functions start with tgui#();
+*/
 
-// === TGUI_INIT_H
+static TGUI_CONFIG glob_cfg;
+static TGUI_CONFIG cfg;
 
+#include <fcntl.h>
+#include <unistd.h>
+#include <err.h>
+
+struct winsize ws;
+
+static int fd;
+static struct winsize __tguiGetTermSize() {
+	struct winsize ws;
+	fd = open("/dev/tty", O_RDWR);
+
+	if (fd < 0 || ioctl(fd, TIOCGWINSZ, &ws)) err(8, "/dev/tty");
+	return ws;
+}
+
+// We will have struct winsize at a global scope, outside this local function
+// Therefore, we'd be returning a pointer to this struct
+void* tguiInit(TGUI_FLAG flag) {
+	// Initialization consists on retrieving terminal info, like TIOCGWINSZ
+	// Getting to know $HOME, current $PATH, probably some user info and other variables
+	switch (flag) {
+		default:
+		case TGUI_FLAG_NONE: // Normal default initialization
+			ws = __tguiGetTermSize(); // This way we get info about ROWS, COLS
+			return &ws;
+			break;
+		// In case passing, for example, any TGUI_FLAG that can change our terminal info
+		// TODO: setTermSize() with TIOCSWINSZ, notice the S there
+	}
+}
 
 // ===
 
@@ -20,7 +53,7 @@ void tguiSetGlobAttr(TGUI_GLOB_ATTR attr, ...) {
 
 	switch (attr) {
 		case TGUI_ATTR_CLEAR_COLOR:
-			glob_conf.clear_color = va_arg(args, TGUI_PIXEL_COLOR);
+			glob_cfg.clear_color = va_arg(args, TGUI_PIXEL_COLOR);
 			break;
 	}
 
@@ -33,17 +66,17 @@ void tguiSetWinAttr(TGUI_WIN_ATTR attr, ...) {
 
 	switch (attr) {
 		case TGUI_ATTR_PXA_COLOR:
-			config.color = va_arg(args, TGUI_PIXEL_COLOR);
+			cfg.color = va_arg(args, TGUI_PIXEL_COLOR);
 			break;
 		case TGUI_ATTR_PXA_FILL_CHAR:
-			config.fill_char = va_arg(args, int);
+			cfg.fill_char = va_arg(args, int);
 			break;
 
 		case TGUI_ATTR_WIN_IS_OPAQUE:
-			config.is_opaque = va_arg(args, int);
+			cfg.is_opaque = va_arg(args, int);
 			break;
 		case TGUI_ATTR_WIN_HAS_BORDER:
-			config.has_border = va_arg(args, int);
+			cfg.has_border = va_arg(args, int);
 			break;
 
 	}
@@ -53,6 +86,55 @@ void tguiSetWinAttr(TGUI_WIN_ATTR attr, ...) {
 
 // ===
 
+static TGUI_CONFIG __tguiLoadDefaultConfig() {
+	return (TGUI_CONFIG){
+		.clear_color = TGUI_PIXEL_RESET_COLOR,
+		.color = TGUI_PIXEL_COLOR_BG_BWHITE,
+		.fill_char = ' ',
+		.is_opaque = TGUI_TRUE,
+		.has_border = TGUI_FALSE
+	};
+}
+
+void __tguiResizeWinOutOfBorder(TGUI_WIN* win) {
+	if (win->width <= ws.ws_col && win->x + win->width > ws.ws_col) {
+		win->x -= (win->x + win->width - ws.ws_col);
+	}
+	if (win->height <= ws.ws_row && win->y + win->height > ws.ws_row) {
+		win->y -= (win->y + win->height - ws.ws_row);
+	}
+	if (win->width > ws.ws_col) {
+		win->width = ws.ws_col;
+		win->x = 0;
+	}
+	if (win->height > ws.ws_row) {
+		win->height = ws.ws_row;
+		win->y = 0;
+	}
+}
+
+void __tguiFillPixelCharArray(TGUI_WIN* win, char c) {
+	for (int i = 0; i < win->pxa->size; i++) {
+		win->pxa->px[i].c = c;
+	}
+}
+
+void __tguiFillPixelColorArray(TGUI_WIN* win, TGUI_PIXEL_COLOR color) {
+	for (int i = 0; i < win->pxa->size; i++) {
+		win->pxa->px[i].color = color;
+	}
+}
+
+int __tguiFillPixelArray(TGUI_WIN *win) {
+	if (win->cfg.is_opaque == 0) { // then it's transparent
+		return 1; // return true since pixel array could be filled succesfully
+	}
+	__tguiFillPixelCharArray(win, win->cfg.fill_char);
+	__tguiFillPixelColorArray(win, win->cfg.color);
+
+	return 1; // pixel array filled succesfully
+}
+
 TGUI_WIN* tguiCreateWindow(int x, int y, int width, int height, TGUI_WIN_FLAG flag) {
 	TGUI_WIN* win = malloc(sizeof(TGUI_WIN));
 	win->width = width;
@@ -61,6 +143,8 @@ TGUI_WIN* tguiCreateWindow(int x, int y, int width, int height, TGUI_WIN_FLAG fl
 	win->x = x;
 	win->y = y;
 
+	__tguiResizeWinOutOfBorder(win);
+
 	TGUI_PIXEL_ARRAY* pxa = malloc(sizeof(TGUI_PIXEL_ARRAY));
 	win->pxa = pxa;
 
@@ -68,44 +152,22 @@ TGUI_WIN* tguiCreateWindow(int x, int y, int width, int height, TGUI_WIN_FLAG fl
 	pxa->px = px;
 	pxa->size = width * height;
 
-	win->config = config;
+	win->cfg = cfg;
 
 	switch (flag) {
 		default:
 		case TGUI_WIN_OPAQUE: // "blankness" set from here
-			win->config.is_opaque = 1;
-			win->config.fill_char = ' ';
-			tguiFillPixelArray(win);
+			win->cfg.is_opaque = 1;
+			__tguiFillPixelArray(win);
 		break;
 		case TGUI_WIN_TRANSPARENT:
-			win->config.is_opaque = 0;
-			tguiFillPixelArray(win);
+			win->cfg.is_opaque = 0;
+			__tguiFillPixelArray(win);
 		break;
 	}
 	
+	cfg = __tguiLoadDefaultConfig();
 	return win;
-}
-
-static int tguiFillPixelArray(TGUI_WIN *win) {
-	if (win->config.is_opaque == 0) { // then it's transparent
-		return 1; // return true since pixel array could be filled succesfully
-	}
-	tguiFillPixelCharArray(win, win->config.fill_char);
-	tguiFillPixelColorArray(win, win->config.color);
-
-	return 1; // pixel array filled succesfully
-}
-
-static void tguiFillPixelCharArray(TGUI_WIN* win, char c) {
-	for (int i = 0; i < win->pxa->size; i++) {
-		win->pxa->px[i].c = win->config.fill_char;
-	}
-}
-
-static void tguiFillPixelColorArray(TGUI_WIN* win, TGUI_PIXEL_COLOR color) {
-	for (int i = 0; i < win->pxa->size; i++) {
-		win->pxa->px[i].color = win->config.color;
-	}
 }
 
 int tguiUpdate(TGUI_WIN *win, TGUI_WIN_ATTR attr, ...) {
@@ -114,20 +176,20 @@ int tguiUpdate(TGUI_WIN *win, TGUI_WIN_ATTR attr, ...) {
 
 	switch (attr) {
 		case TGUI_ATTR_PXA_COLOR:
-			win->config.color = va_arg(args, TGUI_PIXEL_COLOR);
-			tguiFillPixelColorArray(win, win->config.color);
+			win->cfg.color = va_arg(args, TGUI_PIXEL_COLOR);
+			__tguiFillPixelColorArray(win, win->cfg.color);
 			break;
 		case TGUI_ATTR_PXA_FILL_CHAR:
-			win->config.fill_char = va_arg(args, int);
-			tguiFillPixelCharArray(win, win->config.fill_char);
+			win->cfg.fill_char = va_arg(args, int);
+			__tguiFillPixelCharArray(win, win->cfg.fill_char);
 			break;
 
 		case TGUI_ATTR_WIN_IS_OPAQUE:
 			//win->config.fill_char = ' ';
-			win->config.is_opaque = va_arg(args, int);
-			if (win->config.is_opaque == 1) {
-				tguiFillPixelColorArray(win, win->config.color);
-				tguiFillPixelCharArray(win, win->config.fill_char);
+			win->cfg.is_opaque = va_arg(args, int);
+			if (win->cfg.is_opaque == 1) {
+				__tguiFillPixelColorArray(win, win->cfg.color);
+				__tguiFillPixelCharArray(win, win->cfg.fill_char);
 			}
 		case TGUI_ATTR_WIN_HAS_BORDER:
 			// not yet implemented
@@ -150,38 +212,50 @@ int tguiWinDestroy(TGUI_WIN *win) {
 
 int tguiQuit() {
 	// Free memory got from tguiInit();
+	close(fd); // file descriptor
+	
 	return TGUI_SUCCESS;
 }
 
 // === RENDER
 
+// TODO: Probably needed of a custom made cursor movement
 int tguiRender(TGUI_WIN* win) {
+	// Basically all we need is a formated buffer and therefore a pointer to it
+	int bufsz = win->width * win->height + 1; // Must be +1 when sent to snprintf();
+
+	// Buffer size must be sizeof(char) * bufsz + size of
+	char* buffer = malloc(sizeof(char) * bufsz); // bo tá sendo aqui no tamanho
+
+	int fb = 0;
+
 	int i = 0;
-
+	// TODO: Improve performance by writing to a single buffer and print it out later on
 	for (int h = 0; h < win->height; h++) {
-		int c_pos[2] = {
-			win->y + h,
-			win->x
-		};
-
-		printf("\033[%d;%dH", c_pos[0], c_pos[1]); // change cursor position | same as setting x and y
+		fb += snprintf(buffer + fb, bufsz - fb, "\033[%d;%dH", win->y + h, win->x); // change cursor position | same as setting x and y
 		for (int w = 0; w < win->width; w++) {
 			// check if win->config.is_opaque == 0 and if win->pxa->px[i] isn't inside any entity / widget
 			// if not, just move cursor pos to +1
-			if (win->config.is_opaque == 0) {
-				printf("\033[%d;%dH", c_pos[0] + 1, c_pos[1]);
+			if (win->cfg.is_opaque != 0 && fb <= bufsz - 1) {
+				//printf("\033[%d;%dH", c_pos[0] + 1, c_pos[1]);
+				fb += snprintf(buffer + fb, bufsz - fb, "%s%c", win->pxa->px[i].color, win->pxa->px[i].c);
 			} else {
-				printf("%s%c", win->pxa->px[i].color, win->pxa->px[i].c);
+				fb += snprintf(buffer + fb, bufsz - fb, "%s", "\033[1C");
 			}
+
 			i++;
 		}
-		//printf("b");
-		printf("\n");
+		fb += snprintf(buffer + fb, bufsz - fb, "%s", "\n");
 	}
-	printf("%s\033[1H", TGUI_PIXEL_RESET_COLOR);
+
+	fputs(buffer, stdout);
+	//write(STDOUT_FILENO, buffer, bufsz);
+	//printf("%s\033[1H", TGUI_PIXEL_RESET_COLOR);
+
+	free(buffer);
 	return TGUI_SUCCESS;
 }
 
 void tguiClear() {
-	printf("%s\033[2J\033[1H", glob_conf.clear_color); // framebuffer size supports current a fixed size
+	printf("%s\033[2J\033[1H", glob_cfg.clear_color); // framebuffer size supports current a fixed size
 }

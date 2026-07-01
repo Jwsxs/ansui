@@ -11,14 +11,16 @@ int main() {
 	tguiSetGlobAttr(TGUI_ATTR_CLEAR_COLOR, TGUI_PIXEL_RESET_COLOR);
 
 	// Each "window" has to have all their attributes set before window creation call
-	// If #_FILL_CHAR is set, it's recommended to call window with TGUI_WIN_FILLED
+	// If #_FILL_CHAR is set, it's recommended to call window with TGUI_WIN_OPAQUE
 	tguiSetWinAttr(TGUI_ATTR_PXA_FILL_CHAR, 'o');
 	tguiSetWinAttr(TGUI_ATTR_PXA_COLOR, TGUI_PIXEL_COLOR_BG_BRED);
-	TGUI_WIN* win1 = tguiCreateWindow(5, 5, 50, 20, TGUI_WIN_OPAQUE);
+	TGUI_WIN* win1 = tguiCreateWindow(10, 10, 40, 20, TGUI_WIN_OPAQUE);
 
+	// When tguiCreateWindow() is called, the attributes are all set to default. Check ./include/tgui.h
+	// You need to set your Windows attributes again.
 	// Example of a non-char bold-blue window
 	tguiSetWinAttr(TGUI_ATTR_PXA_COLOR, TGUI_PIXEL_COLOR_BG_BBLUE);
-	TGUI_WIN* win2 = tguiCreateWindow(0, 0, 25, 10, TGUI_WIN_OPAQUE);
+	TGUI_WIN* win2 = tguiCreateWindow(0, 0, 10, 10, TGUI_WIN_OPAQUE);
 
 	for (int frame = 0; frame < 20; frame++) {
 		// Terminal render pipeline:
