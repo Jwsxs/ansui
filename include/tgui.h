@@ -95,6 +95,7 @@ typedef struct TGUI_CONFIG {
 		       // == 0 => TGUI_WIN_TRANSPARENT
 		       // == 1 => TGUI_WIN_OPAQUE
 	int has_border;
+	int is_centered;
 } TGUI_CONFIG;
 
 // === ATTRIBUTES

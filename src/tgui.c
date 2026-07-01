@@ -79,6 +79,9 @@ void tguiSetWinAttr(TGUI_WIN_ATTR attr, ...) {
 			cfg.has_border = va_arg(args, int);
 			break;
 
+		case TGUI_ATTR_WIN_POSITION_CENTERED:
+			cfg.is_centered = va_arg(args, int);
+			break;
 	}
 
 	va_end(args);
@@ -92,7 +95,8 @@ static TGUI_CONFIG __tguiLoadDefaultConfig() {
 		.color = TGUI_PIXEL_COLOR_BG_BWHITE,
 		.fill_char = ' ',
 		.is_opaque = TGUI_TRUE,
-		.has_border = TGUI_FALSE
+		.has_border = TGUI_FALSE,
+		.is_centered = TGUI_FALSE
 	};
 }
 
@@ -135,14 +139,19 @@ int __tguiFillPixelArray(TGUI_WIN *win) {
 	return 1; // pixel array filled succesfully
 }
 
+// NOTE: Might look better to load into a cfg and just pass it as a whole on tguiCreateWindow, but conceptually it's the same
 TGUI_WIN* tguiCreateWindow(int x, int y, int width, int height, TGUI_WIN_FLAG flag) {
 	TGUI_WIN* win = malloc(sizeof(TGUI_WIN));
 	win->width = width;
 	win->height = height;
 
-	win->x = x;
-	win->y = y;
-
+	if (cfg.is_centered == TGUI_TRUE) {
+		win->x = ws.ws_col / 2 - win->width / 2;
+		win->y = ws.ws_row / 2 - win->height / 2;
+	} else {
+		win->x = x;
+		win->y = y;
+	}
 	__tguiResizeWinOutOfBorder(win);
 
 	TGUI_PIXEL_ARRAY* pxa = malloc(sizeof(TGUI_PIXEL_ARRAY));
@@ -194,6 +203,13 @@ int tguiUpdate(TGUI_WIN *win, TGUI_WIN_ATTR attr, ...) {
 		case TGUI_ATTR_WIN_HAS_BORDER:
 			// not yet implemented
 			break;
+
+		case TGUI_ATTR_WIN_POSITION_CENTERED:
+			if (va_arg(args, int) == TGUI_TRUE) {
+				win->x = ws.ws_col - (win->width / 2);
+				win->y = ws.ws_row - (win->height / 2);
+			}
+			break;
 		default:
 			break;
 	}
@@ -219,7 +235,7 @@ int tguiQuit() {
 
 // === RENDER
 
-// HACK: Probably need of a custom made cursor movement
+// NOTE: Probably need of a custom made cursor movement
 int tguiRender(TGUI_WIN* win) {
 	// Basically all we need is a formated buffer and therefore a pointer to it
 	int char_bufsz = win->width * win->height; // Must be +1 when sent to snprintf();

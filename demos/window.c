@@ -1,3 +1,5 @@
+// Example of window creation
+
 #include "../include/tgui.h"
 #include <unistd.h>
 
@@ -19,8 +21,14 @@ int main() {
 	// When tguiCreateWindow() is called, the attributes are all set to default. Check ./include/tgui.h
 	// You need to set your Windows attributes again.
 	// Example of a non-char bold-blue window
-	tguiSetWinAttr(TGUI_ATTR_PXA_COLOR, TGUI_PIXEL_COLOR_BG_BBLUE);
+	tguiSetWinAttr(TGUI_ATTR_PXA_COLOR, TGUI_PIXEL_COLOR_BG_BGREEN);
 	TGUI_WIN* win2 = tguiCreateWindow(0, 0, 10, 10, TGUI_WIN_OPAQUE);
+	
+	// Whatever position is set after this attribute set is completely ignored
+	tguiSetWinAttr(TGUI_ATTR_WIN_POSITION_CENTERED, TGUI_TRUE);
+	
+	tguiSetWinAttr(TGUI_ATTR_PXA_COLOR, TGUI_PIXEL_COLOR_BG_BBLUE);
+	TGUI_WIN* win3 = tguiCreateWindow(0, 0, 50, 20, TGUI_WIN_OPAQUE);
 
 	for (int frame = 0; frame < 20; frame++) {
 		// Terminal render pipeline:
@@ -30,6 +38,7 @@ int main() {
 		// 2. Render windows
 		tguiRender(win1);
 		tguiRender(win2);
+		tguiRender(win3);
 
 		if (frame > 5) {
 			tguiUpdate(win1, TGUI_ATTR_PXA_COLOR, TGUI_PIXEL_COLOR_BG_BWHITE);
@@ -41,36 +50,11 @@ int main() {
 		// 3. FPS set | usleep() for better visualization
 		usleep(200000);
 	}
-	
-	// You have to destroy the window before quitting TGUI
-	// In this case, destroying only win1 since we're still coding
-	tguiWinDestroy(win1);
-
-	tguiSetWinAttr(TGUI_ATTR_PXA_FILL_CHAR, 'O');
-	tguiSetWinAttr(TGUI_ATTR_PXA_COLOR, TGUI_PIXEL_COLOR_CH_BBLUE);
-	TGUI_WIN* win3 = tguiCreateWindow(25, 25, 10, 10, TGUI_WIN_TRANSPARENT);
-
-	for (int frame = 0; frame < 20; frame++) {
-		tguiClear();
-		tguiRender(win2);
-		tguiRender(win3);
-		
-		if (frame > 5) {
-			tguiUpdate(win2, TGUI_ATTR_PXA_COLOR, TGUI_PIXEL_COLOR_CH_BGREEN);
-			tguiUpdate(win2, TGUI_ATTR_PXA_FILL_CHAR, 'C');
-		}
-
-		if (frame == 10) {
-			tguiUpdate(win3, TGUI_ATTR_WIN_IS_OPAQUE, TGUI_TRUE);
-		}
-
-		usleep(200000);
-	}
 
 	// 4. At end, clear screen and destroy (free()) everything
 	tguiClear();
+	tguiWinDestroy(win1); // If not called, tguiQuit() already clears it for you
 	tguiWinDestroy(win2);
-	tguiWinDestroy(win3);
 	tguiQuit();
 	return 1;
 }
