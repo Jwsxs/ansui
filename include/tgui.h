@@ -17,7 +17,7 @@
 #define TGUI_INIT_H
 #ifdef TGUI_INIT_H
 
-static struct TGUI_UINFO {
+extern struct TGUI_UINFO {
 	struct winsize* ws; // Stuff retrieved from getTermSize() => ./src/tgui_init.c
 } TGUI_UINFO;
 
@@ -35,6 +35,9 @@ void* tguiInit(TGUI_FLAG flag);
 // X => BACKGROUND OR TEXT
 // Y => REGULAR OR BOLD ( no high intensity )
 // C => COLOR
+
+// TODO:
+// TGUI_SET_BG/CH_COLOR, BOLD/REGULAR, # (COLOR_RED/BLUE/GREEN)
 
 #define TGUI_PIXEL_COLOR_CH_RBLACK "\033[0;90m"
 #define TGUI_PIXEL_COLOR_CH_RRED "\033[0;91m"
@@ -103,7 +106,7 @@ typedef enum TGUI_WIN_ATTR {
 
 	TGUI_ATTR_WIN_IS_OPAQUE,
 	TGUI_ATTR_WIN_HAS_BORDER,
-	TGUI_ATTR_WIN_POSITION,
+	TGUI_ATTR_WIN_POSITION_CENTERED,
 } TGUI_WIN_ATTR;
 
 void tguiSetGlobAttr(TGUI_GLOB_ATTR attr, ...);
@@ -144,7 +147,7 @@ typedef struct TGUI_WIN {
 	int height;
 	int depth; // not used yet
 	TGUI_PIXEL_ARRAY* pxa;
-	TGUI_CONFIG config;
+	TGUI_CONFIG cfg;
 
 	TGUI_WIDGET* widget;
 	TGUI_ENTITIES* entities;
@@ -158,10 +161,6 @@ typedef enum TGUI_WIN_FLAG {
 
 TGUI_WIN* tguiCreateWindow(int x, int y, int width, int height, TGUI_WIN_FLAG flag);
 
-static int tguiFillPixelArray(TGUI_WIN* win);
-static void tguiFillPixelCharArray(TGUI_WIN* win, char c);
-static void tguiFillPixelColorArray(TGUI_WIN* win, TGUI_PIXEL_COLOR color);
-
 int tguiUpdate(TGUI_WIN* win, TGUI_WIN_ATTR attr, ...);
 
 int tguiWinDestroy(TGUI_WIN* win);
@@ -172,6 +171,6 @@ int tguiQuit();
 
 int tguiRender(TGUI_WIN* win);
 
-void tguiClear(); // clear whole window, terminal itself
+void tguiClear(); // clear whole terminal
 
-#endif
+#endif // TGUI_H
