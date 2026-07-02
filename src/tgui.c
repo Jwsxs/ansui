@@ -12,7 +12,8 @@
 */
 
 static TGUI_CONFIG glob_cfg;
-static TGUI_CONFIG cfg;
+// TODO: Get this shitass pussy to work
+// static TGUI_CONFIG cfg;
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -45,79 +46,36 @@ void* tguiInit(TGUI_FLAG flag) {
 	}
 }
 
-// ===
+// === ATTRIBUTES
 
-void tguiSetGlobAttr(TGUI_GLOB_ATTR attr, ...) {
-	va_list args;
-	va_start(args, attr);
-
+void* tguiLoadDefaultAttr(TGUI_LOAD_ATTR attr) {
 	switch (attr) {
-		case TGUI_ATTR_CLEAR_COLOR:
-			glob_cfg.clear_color = va_arg(args, TGUI_PIXEL_COLOR);
-			break;
+		case TGUI_ATTR_GLOBAL:
+			return malloc(sizeof(TGUI_CONFIG_GLOBAL));
+		case TGUI_ATTR_WINDOW:
+			return malloc(sizeof(TGUI_CONFIG_WINDOW));
+		case TGUI_ATTR_ENTITY:
+			return malloc(sizeof(TGUI_CONFIG_ENTITY));
+		case TGUI_ATTR_WIDGET:
+			return malloc(sizeof(TGUI_CONFIG_WIDGET));
 	}
-
-	va_end(args);
-}
-
-void tguiSetWinAttr(TGUI_WIN_ATTR attr, ...) {
-	va_list args;
-	va_start(args, attr);
-
-	switch (attr) {
-		case TGUI_ATTR_PXA_COLOR:
-			cfg.color = va_arg(args, TGUI_PIXEL_COLOR);
-			break;
-		case TGUI_ATTR_PXA_FILL_CHAR:
-			cfg.fill_char = va_arg(args, int);
-			break;
-
-		case TGUI_ATTR_WIN_IS_OPAQUE:
-			cfg.is_opaque = va_arg(args, int);
-			break;
-		case TGUI_ATTR_WIN_HAS_BORDER:
-			cfg.has_border = va_arg(args, int);
-			break;
-
-		case TGUI_ATTR_WIN_POSITION_CENTERED:
-			cfg.is_centered = va_arg(args, int);
-			break;
-	}
-
-	va_end(args);
-}
-
-// TODO: Set entity (object) attributes for creation and appliance on the window
-void tguiSetEntAttr(TGUI_ENT_ATTR attr, ...) {
-
 }
 
 // ===
-
-static TGUI_CONFIG __tguiLoadDefaultConfig() {
-	return (TGUI_CONFIG){
-		.clear_color = TGUI_PIXEL_RESET_COLOR,
-		.color = TGUI_PIXEL_COLOR_BG_BWHITE,
-		.fill_char = ' ',
-		.is_opaque = TGUI_TRUE,
-		.has_border = TGUI_FALSE,
-		.is_centered = TGUI_FALSE
-	};
-}
 
 void __tguiResizeWinOutOfBorder(TGUI_WIN* win) {
-	if (win->width <= ws.ws_col && win->x + win->width > ws.ws_col) {
-		win->x -= (win->x + win->width - ws.ws_col);
+	if (win->w <= ws.ws_col && win->x + win->w > ws.ws_col) {
+		win->x -= (win->x + win->w - ws.ws_col);
 	}
-	if (win->height <= ws.ws_row && win->y + win->height > ws.ws_row) {
-		win->y -= (win->y + win->height - ws.ws_row);
+	if (win->h <= ws.ws_row && win->y + win->h > ws.ws_row) {
+		win->y -= (win->y + win->h - ws.ws_row);
 	}
-	if (win->width > ws.ws_col) {
-		win->width = ws.ws_col;
+	if (win->w > ws.ws_col) {
+		win->w = ws.ws_col;
 		win->x = 0;
 	}
-	if (win->height > ws.ws_row) {
-		win->height = ws.ws_row;
+	if (win->h > ws.ws_row) {
+		win->h = ws.ws_row;
 		win->y = 0;
 	}
 }
@@ -135,37 +93,41 @@ void __tguiFillPixelColorArray(TGUI_WIN* win, TGUI_PIXEL_COLOR color) {
 }
 
 int __tguiFillPixelArray(TGUI_WIN *win) {
+	/*
 	if (win->cfg.is_opaque == 0) { // then it's transparent
 		return 1; // return true since pixel array could be filled succesfully
 	}
-	__tguiFillPixelCharArray(win, win->cfg.fill_char);
-	__tguiFillPixelColorArray(win, win->cfg.color);
+	*/
+	__tguiFillPixelCharArray(win, win->char_color);
+	__tguiFillPixelColorArray(win, win->cfg->);
 
 	return 1; // pixel array filled succesfully
 }
 
+void tguiSetFlags(void* cfg, ...) {
+	va_list args;
+	va_start(args, cfg);
+
+	switch (cfg) {
+		case TGUI_WIN_POS_CENTERED:
+			cfg->x = ws.ws_col / 2 - cfg->width / 2;
+	}
+}
+
 // NOTE: Might look better to load into a cfg and just pass it as a whole on tguiCreateWindow, but conceptually it's the same
 // NOTE: Will be letting this one until some more advanced/complex stuff (for me) comes upon my mind and I have to remake it by a whole
-TGUI_WIN* tguiCreateWindow(int x, int y, int width, int height, TGUI_WIN_FLAG flag) {
+TGUI_WIN* tguiCreateWindow(TGUI_CONFIG_WINDOW* cfg, TGUI_WIN_FLAG flag) {
 	TGUI_WIN* win = malloc(sizeof(TGUI_WIN));
-	win->width = width;
-	win->height = height;
+	win->x = cfg->x;
 
-	if (cfg.is_centered == TGUI_TRUE) {
-		win->x = ws.ws_col / 2 - win->width / 2;
-		win->y = ws.ws_row / 2 - win->height / 2;
-	} else {
-		win->x = x;
-		win->y = y;
-	}
 	__tguiResizeWinOutOfBorder(win);
 
 	TGUI_PIXEL_ARRAY* pxa = malloc(sizeof(TGUI_PIXEL_ARRAY));
 	win->pxa = pxa;
 
-	TGUI_PIXEL* px = malloc(sizeof(TGUI_PIXEL) * width * height);
+	TGUI_PIXEL* px = malloc(sizeof(TGUI_PIXEL) * win->width * win->height);
 	pxa->px = px;
-	pxa->size = width * height;
+	pxa->size = win->width * win->height;
 
 	win->cfg = cfg;
 

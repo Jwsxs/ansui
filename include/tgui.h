@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// ./src/tgui_init.c
 #include <sys/ioctl.h>
 
 #ifndef TGUI_H
@@ -17,11 +16,11 @@
 #define TGUI_INIT_H
 #ifdef TGUI_INIT_H
 
-extern struct TGUI_UINFO {
+extern struct {
 	struct winsize* ws; // Stuff retrieved from getTermSize() => ./src/tgui_init.c
 } TGUI_UINFO;
 
-typedef enum TGUI_FLAG {
+typedef enum {
 	TGUI_FLAG_NONE,
 } TGUI_FLAG;
 
@@ -70,113 +69,80 @@ void* tguiInit(TGUI_FLAG flag);
 
 typedef const char* TGUI_PIXEL_COLOR;
 
-typedef struct TGUI_PIXEL {
+typedef struct {
 	uint8_t x;
 	uint8_t y;
 	char c;
 	TGUI_PIXEL_COLOR color;
 } TGUI_PIXEL;
 
-typedef struct TGUI_PIXEL_ARRAY {
+typedef struct {
 	int size;
 	TGUI_PIXEL* px;
 } TGUI_PIXEL_ARRAY;
 
+// === ATTRIBUTES
+// NOTE: These attributes are like flags, not variables to be handled but something
+//	 that's used as a way of giving it the life it deserves.
+
+// NOTE: Which config attribute to load to
+typedef enum {
+	TGUI_ATTR_GLOBAL,
+	TGUI_ATTR_WINDOW,
+	TGUI_ATTR_ENTITY,
+	TGUI_ATTR_WIDGET,
+} TGUI_LOAD_ATTR;
+
+void* tguiLoadDefaultAttr(TGUI_LOAD_ATTR attr);
+
 // === CONFIG
 
-typedef struct TGUI_CONFIG {
-	TGUI_PIXEL_COLOR clear_color;
+typedef struct TGUI_CONFIG_GLOBAL {
+	TGUI_PIXEL_COLOR clear_color = TGUI_PIXEL_RESET_COLOR;
+} TGUI_CONFIG_GLOBAL;
 
-	TGUI_PIXEL_COLOR color;
+typedef struct TGUI_CONFIG_WINDOW {
+	int x = 0, y = 0;
+	int w = 25, h = 10;
+	TGUI_PIXEL_COLOR char_color = TGUI_PIXEL_RESET_COLOR, bg_color = TGUI_PIXEL_COLOR_BG_BRED;
+} TGUI_CONFIG_WINDOW;
 
-	char fill_char;
+typedef struct TGUI_CONFIG_ENTITY {
+	int x = 0, y = 0;
+	int w = 25, h = 10;
+	TGUI_PIXEL_COLOR char_color = TGUI_PIXEL_RESET_COLOR, bg_color = TGUI_PIXEL_COLOR_BG_BRED;
+} TGUI_CONFIG_ENTITY;
 
-	int is_opaque; // ignore totally .fill_char in case it's 0
-		       // == 0 => TGUI_WIN_TRANSPARENT
-		       // == 1 => TGUI_WIN_OPAQUE
-	int has_border;
-	int is_centered;
-} TGUI_CONFIG;
-
-// === ATTRIBUTES
-
-typedef enum TGUI_GLOB_ATTR {
-	TGUI_ATTR_CLEAR_COLOR,
-} TGUI_GLOB_ATTR;
-
-typedef enum TGUI_WIN_ATTR {
-	TGUI_ATTR_PXA_COLOR,
-	TGUI_ATTR_PXA_FILL_CHAR,
-
-	TGUI_ATTR_WIN_IS_OPAQUE,
-	TGUI_ATTR_WIN_HAS_BORDER,
-	TGUI_ATTR_WIN_POSITION_CENTERED,
-} TGUI_WIN_ATTR;
-
-typedef enum TGUI_ENT_ATTR {
-	TGUI_ATTR_ENT_WINDOW,
-} TGUI_ENT_ATTR;
-
-typedef enum TGUI_WIDG_ATTR {
-
-} TGUI_WIDG_ATTR;
-
-void tguiSetGlobAttr(TGUI_GLOB_ATTR attr, ...);
-void tguiSetWinAttr(TGUI_WIN_ATTR attr, ...);
-void tguiSetEntAttr(TGUI_ENT_ATTR attr, ...);
-void tguiSetWidgAttr(TGUI_WIDG_ATTR  attr, ...);
-
-// === ENTITIES
-// for entities it's different, since most of it is an object with different w and h
-// also, different colors, for sprite, maybe image integration? ( BMP-PARSER or JPEG )
-
-typedef struct TGUI_ENTITY {
-
-} TGUI_ENTITY;
-
-// each window will have it's own entities
-typedef struct TGUI_ENTITIES {
-	int size; // amount of entities to be there
-	TGUI_ENTITY* ent;
-} TGUI_ENTITIES;
-
-// === WIDGET
-
-typedef enum TGUI_WIDGET_TYPE {
-	TGUI_WIDGET_TEXT,
-	// TGUI_WIDGET_BUTTON, // don't think I'll be using pretty soon
-} TGUI_WIDGET_TYPE;
-
-typedef struct TGUI_WIDGET {
-	int x, y;
-	int width, height;
-	TGUI_WIDGET_TYPE type;
-} TGUI_WIDGET;
+typedef struct TGUI_CONFIG_WIDGET {
+	int x = 0, y = 0;
+	int w = 25, h = 10;
+	TGUI_PIXEL_COLOR char_color = TGUI_PIXEL_RESET_COLOR, bg_color = TGUI_PIXEL_COLOR_BG_BRED;
+} TGUI_CONFIG_WIDGET;
 
 // === WINDOW
 
 // NOTE:
-typedef struct TGUI_WIN {
+typedef struct {
 	int x, y;
-	int width;
-	int height;
-	int depth; // not used yet
+	int w, h;
+	int depth; // WARN: not used yet
+	TGUI_PIXEL_COLOR char_color = TGUI_PIXEL_RESET_COLOR, bg_color = TGUI_PIXEL_COLOR_BG_BRED;
 	TGUI_PIXEL_ARRAY* pxa;
-	TGUI_CONFIG cfg;
-
-	TGUI_WIDGET* widget;
-	TGUI_ENTITIES* entities;
 } TGUI_WIN;
 
-typedef enum TGUI_WIN_FLAG {
+typedef enum {
 	TGUI_WIN_TRANSPARENT,
 	TGUI_WIN_OPAQUE, // will be pulling TGUI_WIN_BLANK from here
 			 // probably setting it's "blankness" from their config
+	
+	TGUI_WIN_POS_CENTERED
 } TGUI_WIN_FLAG;
 
-TGUI_WIN* tguiCreateWindow(int x, int y, int width, int height, TGUI_WIN_FLAG flag);
+void tguiSetFlags(void* cfg, ...);
 
-int tguiUpdate(TGUI_WIN* win, TGUI_WIN_ATTR attr, ...);
+TGUI_WIN* tguiCreateWindow(TGUI_CONFIG_WINDOW* cfg, TGUI_WIN_FLAG flag);
+
+// int tguiUpdate(TGUI_WIN* win, TGUI_WIN_ATTR attr, ...);
 
 int tguiWinDestroy(TGUI_WIN* win);
 
