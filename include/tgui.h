@@ -113,8 +113,18 @@ typedef enum TGUI_WIN_ATTR {
 	TGUI_ATTR_WIN_POSITION_CENTERED,
 } TGUI_WIN_ATTR;
 
+typedef enum TGUI_ENT_ATTR {
+	TGUI_ATTR_ENT_WINDOW,
+} TGUI_ENT_ATTR;
+
+typedef enum TGUI_WIDG_ATTR {
+
+} TGUI_WIDG_ATTR;
+
 void tguiSetGlobAttr(TGUI_GLOB_ATTR attr, ...);
 void tguiSetWinAttr(TGUI_WIN_ATTR attr, ...);
+void tguiSetEntAttr(TGUI_ENT_ATTR attr, ...);
+void tguiSetWidgAttr(TGUI_WIDG_ATTR  attr, ...);
 
 // === ENTITIES
 // for entities it's different, since most of it is an object with different w and h
@@ -145,6 +155,7 @@ typedef struct TGUI_WIDGET {
 
 // === WINDOW
 
+// NOTE:
 typedef struct TGUI_WIN {
 	int x, y;
 	int width;

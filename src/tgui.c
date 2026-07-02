@@ -87,6 +87,11 @@ void tguiSetWinAttr(TGUI_WIN_ATTR attr, ...) {
 	va_end(args);
 }
 
+// TODO: Set entity (object) attributes for creation and appliance on the window
+void tguiSetEntAttr(TGUI_ENT_ATTR attr, ...) {
+
+}
+
 // ===
 
 static TGUI_CONFIG __tguiLoadDefaultConfig() {
@@ -140,6 +145,7 @@ int __tguiFillPixelArray(TGUI_WIN *win) {
 }
 
 // NOTE: Might look better to load into a cfg and just pass it as a whole on tguiCreateWindow, but conceptually it's the same
+// NOTE: Will be letting this one until some more advanced/complex stuff (for me) comes upon my mind and I have to remake it by a whole
 TGUI_WIN* tguiCreateWindow(int x, int y, int width, int height, TGUI_WIN_FLAG flag) {
 	TGUI_WIN* win = malloc(sizeof(TGUI_WIN));
 	win->width = width;
@@ -251,7 +257,7 @@ int tguiRender(TGUI_WIN* win) {
 	int i = 0;
 
 	// DONE: Improve performance by writing to a single buffer and print it out later on
-	// NOTE: Probably faster, in need to make any fps counter haha
+	// PERF: Probably faster, in need to make any fps counter haha
 	for (int h = 0; h < win->height; h++) {
 		fb += snprintf(buffer + fb, bufsz - fb, "\e[%d;%dH", win->y + h, win->x); // change cursor position | same as setting x and y
 		for (int w = 0; w < win->width; w++) {
@@ -279,4 +285,4 @@ int tguiRender(TGUI_WIN* win) {
 
 void tguiClear() {
 	printf("%s\033[2J\033[1H", glob_cfg.clear_color); // framebuffer size supports current a fixed size
-}
+
