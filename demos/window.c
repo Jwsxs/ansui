@@ -1,19 +1,19 @@
 // Example of window creation
 
-#include "../include/tgui.h"
+#include "../include/ansui.h"
 
 #include <unistd.h>
 
 int main() {
-	tguiInit(TGUI_FLAG_NONE);
+	ansuiInit(ANSUI_FLAG_NONE);
 
-	TGUI_CONFIG_WINDOW* w1_cfg = tguiLoadDefaultConfig(TGUI_LOAD_WINDOW_ATTR);
-	TGUI_WIN* w1 = tguiCreateWindow(w1_cfg, TGUI_WIN_POS_CENTERED);
+	ANSUI_CONFIG_WINDOW* w1_cfg = ansuiLoadDefaultConfig(ANSUI_LOAD_WINDOW_ATTR);
+	ANSUI_WIN* w1 = ansuiCreateWindow(w1_cfg, ANSUI_WIN_POS_CENTERED);
 
-	tguiClear();
-	// tguiRender(w1);
+	ansuiClear();
+	// ansuiRender(w1);
 
-	// tguiWinDestroy(w1);
-	tguiQuit();
+	// ansuiWinDestroy(w1);
+	ansuiQuit();
 	return 1;
 }
