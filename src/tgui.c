@@ -11,7 +11,7 @@
  == all functions start with tgui#();
 */
 
-static TGUI_CONFIG glob_cfg;
+static TGUI_CONFIG_GLOBAL glob_cfg;
 // TODO: Get this shitass pussy to work
 // static TGUI_CONFIG cfg;
 
@@ -48,16 +48,27 @@ void* tguiInit(TGUI_FLAG flag) {
 
 // === ATTRIBUTES
 
-void* tguiLoadDefaultAttr(TGUI_LOAD_ATTR attr) {
+void* tguiLoadDefaultConfig(TGUI_LOAD_ATTR attr) {
+	TGUI_CONFIG_WINDOW* cfg = malloc(sizeof(TGUI_CONFIG_WINDOW));
+
 	switch (attr) {
-		case TGUI_ATTR_GLOBAL:
-			return malloc(sizeof(TGUI_CONFIG_GLOBAL));
-		case TGUI_ATTR_WINDOW:
-			return malloc(sizeof(TGUI_CONFIG_WINDOW));
-		case TGUI_ATTR_ENTITY:
-			return malloc(sizeof(TGUI_CONFIG_ENTITY));
-		case TGUI_ATTR_WIDGET:
-			return malloc(sizeof(TGUI_CONFIG_WIDGET));
+		case TGUI_LOAD_GLOBAL_ATTR:
+			// return malloc(sizeof(TGUI_CONFIG_GLOBAL));
+		case TGUI_LOAD_WINDOW_ATTR:
+			cfg->x=0;
+			cfg->y=0;
+			cfg->w=25;
+			cfg->h=10;
+			cfg->c=' ';
+			cfg->char_color=TGUI_PIXEL_RESET_COLOR;
+			cfg->bg_color=TGUI_PIXEL_COLOR_BG_BRED;
+			return cfg;
+			break; // QT: Is this needed?
+
+		case TGUI_LOAD_ENTITY_ATTR:
+			//return malloc(sizeof(TGUI_CONFIG_ENTITY));
+		case TGUI_LOAD_WIDGET_ATTR:
+			//return malloc(sizeof(TGUI_CONFIG_WIDGET));
 	}
 }
 
@@ -80,73 +91,47 @@ void __tguiResizeWinOutOfBorder(TGUI_WIN* win) {
 	}
 }
 
-void __tguiFillPixelCharArray(TGUI_WIN* win, char c) {
-	for (int i = 0; i < win->pxa->size; i++) {
-		win->pxa->px[i].c = c;
+// HACK: BOTH OF THESE
+void __tguiFillPixelArray(TGUI_WIN* win) {
+	for (int i = 0; i < sizeof(TGUI_PIXEL) * win->w * win->h; i+=sizeof(TGUI_PIXEL)) {
+		win->px[i].c = win->c;
+		win->px[i].char_color = win->char_color;
+		win->px[i].bg_color = win->bg_color;
 	}
 }
 
-void __tguiFillPixelColorArray(TGUI_WIN* win, TGUI_PIXEL_COLOR color) {
-	for (int i = 0; i < win->pxa->size; i++) {
-		win->pxa->px[i].color = color;
-	}
-}
-
-int __tguiFillPixelArray(TGUI_WIN *win) {
-	/*
-	if (win->cfg.is_opaque == 0) { // then it's transparent
-		return 1; // return true since pixel array could be filled succesfully
-	}
-	*/
-	__tguiFillPixelCharArray(win, win->char_color);
-	__tguiFillPixelColorArray(win, win->cfg->);
-
-	return 1; // pixel array filled succesfully
-}
-
-void tguiSetFlags(void* cfg, ...) {
-	va_list args;
-	va_start(args, cfg);
-
-	switch (cfg) {
-		case TGUI_WIN_POS_CENTERED:
-			cfg->x = ws.ws_col / 2 - cfg->width / 2;
-	}
-}
-
-// NOTE: Might look better to load into a cfg and just pass it as a whole on tguiCreateWindow, but conceptually it's the same
+// TODO: Might look better to load into a cfg and just pass it as a whole on tguiCreateWindow, but conceptually it's the same
 // NOTE: Will be letting this one until some more advanced/complex stuff (for me) comes upon my mind and I have to remake it by a whole
+
+// TODO: Understand what type of shit I've messed changing these config stuff
 TGUI_WIN* tguiCreateWindow(TGUI_CONFIG_WINDOW* cfg, TGUI_WIN_FLAG flag) {
-	TGUI_WIN* win = malloc(sizeof(TGUI_WIN));
-	win->x = cfg->x;
+	TGUI_WIN* win = cfg;
 
+	win->px = malloc(sizeof(TGUI_PIXEL) * win->w * win->h);
 	__tguiResizeWinOutOfBorder(win);
-
-	TGUI_PIXEL_ARRAY* pxa = malloc(sizeof(TGUI_PIXEL_ARRAY));
-	win->pxa = pxa;
-
-	TGUI_PIXEL* px = malloc(sizeof(TGUI_PIXEL) * win->width * win->height);
-	pxa->px = px;
-	pxa->size = win->width * win->height;
-
-	win->cfg = cfg;
+	__tguiFillPixelArray(win);
 
 	switch (flag) {
+		/*
 		default:
 		case TGUI_WIN_OPAQUE: // "blankness" set from here
-			win->cfg.is_opaque = 1;
 			__tguiFillPixelArray(win);
-		break;
+			break;
 		case TGUI_WIN_TRANSPARENT:
-			win->cfg.is_opaque = 0;
-			__tguiFillPixelArray(win);
-		break;
+			break;
+		*/
+		case TGUI_WIN_POS_CENTERED:
+			win->x = (double)ws.ws_col / 2 - (double)win->w / 2;
+			win->y = ws.ws_row / 2 - win->y / 2;
+			break;
 	}
 	
-	cfg = __tguiLoadDefaultConfig();
+	//free(cfg);
 	return win;
 }
 
+
+/*
 int tguiUpdate(TGUI_WIN *win, TGUI_WIN_ATTR attr, ...) {
 	va_list args;
 	va_start(args, attr);
@@ -185,11 +170,11 @@ int tguiUpdate(TGUI_WIN *win, TGUI_WIN_ATTR attr, ...) {
 	va_end(args);
 	return TGUI_SUCCESS; // was able to succesfully update, but no error handling yet
 }
+*/
 
 int tguiWinDestroy(TGUI_WIN *win) {
 	// Every malloc on *win is:
-	free(win->pxa->px);
-	free(win->pxa);
+	free(win->px);
 	free(win);
 	return TGUI_SUCCESS;
 }
@@ -206,8 +191,8 @@ int tguiQuit() {
 // NOTE: Probably need of a custom made cursor movement
 int tguiRender(TGUI_WIN* win) {
 	// Basically all we need is a formated buffer and therefore a pointer to it
-	int char_bufsz = win->width * win->height; // Must be +1 when sent to snprintf();
-	int ansi_bufsz = char_bufsz * 9; // 9 => Max ANSII String Size => \e[0;107m for example, has 9 chars
+	int char_bufsz = win->w * win->h; // Must be +1 when sent to snprintf();
+	int ansi_bufsz = char_bufsz * 18; // 9 => Max ANSII String Size => \e[0;107m for example, has 9 chars
 	int bufsz = char_bufsz + ansi_bufsz + 1; // At the end, just append '\0', since buffer has to be detected as a string
 						 // For later on fputs(buffer, stdout);
 
@@ -220,18 +205,21 @@ int tguiRender(TGUI_WIN* win) {
 
 	// DONE: Improve performance by writing to a single buffer and print it out later on
 	// PERF: Probably faster, in need to make any fps counter haha
-	for (int h = 0; h < win->height; h++) {
+	for (int h = 0; h < win->h; h++) {
 		fb += snprintf(buffer + fb, bufsz - fb, "\e[%d;%dH", win->y + h, win->x); // change cursor position | same as setting x and y
-		for (int w = 0; w < win->width; w++) {
+		for (int w = 0; w < win->w; w++) {
 			// check if win->config.is_opaque == 0 and if win->pxa->px[i] isn't inside any entity / widget
 			// if not, just move cursor pos to +1
+			// HACK: DIRECTLY PRINTING IT JUST TO SEE IF IT WORKS
+			/*
 			if (win->cfg.is_opaque != 0) {
 				//printf("\033[%d;%dH", c_pos[0] + 1, c_pos[1]);
 				fb += snprintf(buffer + fb, bufsz - fb, "%s%c", win->pxa->px[i].color, win->pxa->px[i].c);
 			} else {
 				fb += snprintf(buffer + fb, bufsz - fb, "%s", "\e[1C");
 			}
-
+			*/
+			fb += snprintf(buffer + fb, bufsz - fb, "%s%s%c", win->px[i].bg_color, win->px[i].char_color, win->px[i].c);
 			i++;
 		}
 		fb += snprintf(buffer + fb, bufsz - fb, "%s", "\n");
@@ -247,4 +235,4 @@ int tguiRender(TGUI_WIN* win) {
 
 void tguiClear() {
 	printf("%s\033[2J\033[1H", glob_cfg.clear_color); // framebuffer size supports current a fixed size
-
+}

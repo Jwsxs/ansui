@@ -70,16 +70,18 @@ void* tguiInit(TGUI_FLAG flag);
 typedef const char* TGUI_PIXEL_COLOR;
 
 typedef struct {
-	uint8_t x;
-	uint8_t y;
 	char c;
-	TGUI_PIXEL_COLOR color;
+	TGUI_PIXEL_COLOR char_color;
+	TGUI_PIXEL_COLOR bg_color;
 } TGUI_PIXEL;
 
+// PERF: Don't think this is needed, just use any array of px and pull stuff from them
+/*
 typedef struct {
 	int size;
 	TGUI_PIXEL* px;
 } TGUI_PIXEL_ARRAY;
+*/
 
 // === ATTRIBUTES
 // NOTE: These attributes are like flags, not variables to be handled but something
@@ -87,52 +89,70 @@ typedef struct {
 
 // NOTE: Which config attribute to load to
 typedef enum {
-	TGUI_ATTR_GLOBAL,
-	TGUI_ATTR_WINDOW,
-	TGUI_ATTR_ENTITY,
-	TGUI_ATTR_WIDGET,
+	TGUI_LOAD_GLOBAL_ATTR,
+	TGUI_LOAD_WINDOW_ATTR,
+	TGUI_LOAD_ENTITY_ATTR,
+	TGUI_LOAD_WIDGET_ATTR,
 } TGUI_LOAD_ATTR;
 
-void* tguiLoadDefaultAttr(TGUI_LOAD_ATTR attr);
+void* tguiLoadDefaultConfig(TGUI_LOAD_ATTR attr);
 
 // === CONFIG
 
+// HACK: FOR USE GENERICALLY
+typedef void* TGUI_CONFIG;
+
 typedef struct TGUI_CONFIG_GLOBAL {
-	TGUI_PIXEL_COLOR clear_color = TGUI_PIXEL_RESET_COLOR;
+	TGUI_PIXEL_COLOR clear_color;// = TGUI_PIXEL_RESET_COLOR;
 } TGUI_CONFIG_GLOBAL;
 
 typedef struct TGUI_CONFIG_WINDOW {
-	int x = 0, y = 0;
-	int w = 25, h = 10;
-	TGUI_PIXEL_COLOR char_color = TGUI_PIXEL_RESET_COLOR, bg_color = TGUI_PIXEL_COLOR_BG_BRED;
+	int x;// = 0;
+	int y;// = 0;
+	int w;// = 25;
+	int h;// = 10;
+	char c;// = ' ';
+	TGUI_PIXEL_COLOR char_color;// = TGUI_PIXEL_RESET_COLOR;
+	TGUI_PIXEL_COLOR bg_color;// = TGUI_PIXEL_COLOR_BG_BRED;
+
+	TGUI_PIXEL* px;
 } TGUI_CONFIG_WINDOW;
 
+/*
 typedef struct TGUI_CONFIG_ENTITY {
-	int x = 0, y = 0;
-	int w = 25, h = 10;
-	TGUI_PIXEL_COLOR char_color = TGUI_PIXEL_RESET_COLOR, bg_color = TGUI_PIXEL_COLOR_BG_BRED;
+	int x = 0;
+	int y = 0;
+	int w = 25;
+	int h = 10;
+	TGUI_PIXEL_COLOR char_color = TGUI_PIXEL_RESET_COLOR;
+	TGUI_PIXEL_COLOR bg_color = TGUI_PIXEL_COLOR_BG_BRED;
 } TGUI_CONFIG_ENTITY;
 
 typedef struct TGUI_CONFIG_WIDGET {
-	int x = 0, y = 0;
-	int w = 25, h = 10;
-	TGUI_PIXEL_COLOR char_color = TGUI_PIXEL_RESET_COLOR, bg_color = TGUI_PIXEL_COLOR_BG_BRED;
+	int x = 0;
+	int y = 0;
+	int w = 25;
+	int h = 10;
+	TGUI_PIXEL_COLOR char_color = TGUI_PIXEL_RESET_COLOR;
+	TGUI_PIXEL_COLOR bg_color = TGUI_PIXEL_COLOR_BG_BRED;
 } TGUI_CONFIG_WIDGET;
+*/
 
 // === WINDOW
 
-// NOTE:
-typedef struct {
-	int x, y;
-	int w, h;
-	int depth; // WARN: not used yet
-	TGUI_PIXEL_COLOR char_color = TGUI_PIXEL_RESET_COLOR, bg_color = TGUI_PIXEL_COLOR_BG_BRED;
-	TGUI_PIXEL_ARRAY* pxa;
-} TGUI_WIN;
+// NOTE: First have to change config itself, then copy it towards window;
+typedef TGUI_CONFIG_WINDOW TGUI_WIN;
 
+// TODO: SET THESE FLAGS AS BITS
+//	 JUST LIKE: 0x00000000 first one
+//	 	    0x00000001 second one
+//	 	    0x00000002 third
+//	 	    0x00000004
+//	 	    0x00000008
+//	 Or something like that
 typedef enum {
-	TGUI_WIN_TRANSPARENT,
-	TGUI_WIN_OPAQUE, // will be pulling TGUI_WIN_BLANK from here
+	// TGUI_WIN_TRANSPARENT,
+	// TGUI_WIN_OPAQUE, // will be pulling TGUI_WIN_BLANK from here
 			 // probably setting it's "blankness" from their config
 	
 	TGUI_WIN_POS_CENTERED
