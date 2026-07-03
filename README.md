@@ -1,5 +1,5 @@
 # ANSUI
-Standing for Terminal GUI
+Standing for ANSII UI
 
 ## ABOUT IT
 Are you sick of having to handle your terminal all the time?  
