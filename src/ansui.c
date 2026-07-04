@@ -48,21 +48,29 @@ void* ansuiInit(ANSUI_FLAG flag) {
 
 // === ATTRIBUTES
 
-void* ansuiLoadDefaultConfig(ANSUI_LOAD_ATTR attr) {
-	ANSUI_CONFIG_WINDOW* cfg = malloc(sizeof(ANSUI_CONFIG_WINDOW));
+static ANSUI_WIN_CONFIG* __loadWinDefaultConfig() {
+	ANSUI_WIN_CONFIG* cfg = malloc(sizeof(ANSUI_WIN_CONFIG));
+	
+	cfg->x = 0;
+	cfg->y = 0;
+	cfg->w = 25;
+	cfg->h = 10;
+	cfg->c = ' ';
+	cfg->char_color = CH_BBLACK;
+	cfg->bg_color = BG_BRED;
 
+	return cfg;
+}
+
+void* ansuiLoadDefaultConfig(ANSUI_LOAD_ATTR attr) {
+	ANSUI_WIN_CONFIG* win_cfg;
+	// HACK: MAYBE USE THOSE BITS CHECKER TO GET THEM VALUES
 	switch (attr) {
 		case ANSUI_LOAD_GLOBAL_ATTR:
 			// return malloc(sizeof(ANSUI_CONFIG_GLOBAL));
 		case ANSUI_LOAD_WINDOW_ATTR:
-			cfg->x=0;
-			cfg->y=0;
-			cfg->w=25;
-			cfg->h=10;
-			cfg->c=' ';
-			cfg->char_color=ANSUI_PIXEL_RESET_COLOR;
-			cfg->bg_color=ANSUI_PIXEL_COLOR_BG_BRED;
-			return cfg;
+			win_cfg = __loadWinDefaultConfig();
+			return win_cfg;
 			break; // QT: Is this needed?
 
 		case ANSUI_LOAD_ENTITY_ATTR:
@@ -75,28 +83,28 @@ void* ansuiLoadDefaultConfig(ANSUI_LOAD_ATTR attr) {
 // ===
 
 void __ansuiResizeWinOutOfBorder(ANSUI_WIN* win) {
-	if (win->w <= ws.ws_col && win->x + win->w > ws.ws_col) {
-		win->x -= (win->x + win->w - ws.ws_col);
+	if (win->cfg->w <= ws.ws_col && win->cfg->x + win->cfg->w > ws.ws_col) {
+		win->cfg->x -= (win->cfg->x + win->cfg->w - ws.ws_col);
 	}
-	if (win->h <= ws.ws_row && win->y + win->h > ws.ws_row) {
-		win->y -= (win->y + win->h - ws.ws_row);
+	if (win->cfg->h <= ws.ws_row && win->cfg->y + win->cfg->h > ws.ws_row) {
+		win->cfg->y -= (win->cfg->y + win->cfg->h - ws.ws_row);
 	}
-	if (win->w > ws.ws_col) {
-		win->w = ws.ws_col;
-		win->x = 0;
+	if (win->cfg->w > ws.ws_col) {
+		win->cfg->w = ws.ws_col;
+		win->cfg->x = 0;
 	}
-	if (win->h > ws.ws_row) {
-		win->h = ws.ws_row;
-		win->y = 0;
+	if (win->cfg->h > ws.ws_row) {
+		win->cfg->h = ws.ws_row;
+		win->cfg->y = 0;
 	}
 }
 
 // HACK: BOTH OF THESE
-void __ansuiFillPixelArray(ANSUI_WIN* win) {
-	for (int i = 0; i < sizeof(ANSUI_PIXEL) * win->w * win->h; i+=sizeof(ANSUI_PIXEL)) {
-		win->px[i].c = win->c;
-		win->px[i].char_color = win->char_color;
-		win->px[i].bg_color = win->bg_color;
+void __ansuiFillPixelArray(int size, ANSUI_PIXEL* pxa, ANSUI_WIN_CONFIG* cfg) {
+	for (int i = 0; i < size; i++) {
+		pxa[i].c = cfg->c;
+		pxa[i].char_color = cfg->char_color;
+		pxa[i].bg_color = cfg->bg_color;
 	}
 }
 
@@ -104,12 +112,14 @@ void __ansuiFillPixelArray(ANSUI_WIN* win) {
 // NOTE: Will be letting this one until some more advanced/complex stuff (for me) comes upon my mind and I have to remake it by a whole
 
 // TODO: Understand what type of shit I've messed changing these config stuff
-ANSUI_WIN* ansuiCreateWindow(ANSUI_CONFIG_WINDOW* cfg, ANSUI_WIN_FLAG flag) {
-	ANSUI_WIN* win = cfg;
+ANSUI_WIN* ansuiCreateWindow(ANSUI_WIN_CONFIG* cfg, ANSUI_WIN_FLAG flag) {
+	// NOTE: When applying win = cfg, segfault occurs, even tho ANSUI_WIN is ANSUI_CONFIG_WINDOW; no idea
+	ANSUI_WIN* win = malloc(sizeof(ANSUI_WIN));
+	win->cfg = cfg;
 
-	win->px = malloc(sizeof(ANSUI_PIXEL) * win->w * win->h);
+	win->pxa = malloc(sizeof(ANSUI_PIXEL) * win->cfg->w * win->cfg->h);
 	__ansuiResizeWinOutOfBorder(win);
-	__ansuiFillPixelArray(win);
+	__ansuiFillPixelArray(win->cfg->w * win->cfg->h, win->pxa, win->cfg);
 
 	switch (flag) {
 		/*
@@ -120,13 +130,16 @@ ANSUI_WIN* ansuiCreateWindow(ANSUI_CONFIG_WINDOW* cfg, ANSUI_WIN_FLAG flag) {
 		case ANSUI_WIN_TRANSPARENT:
 			break;
 		*/
-		case ANSUI_WIN_POS_CENTERED:
-			win->x = (double)ws.ws_col / 2 - (double)win->w / 2;
-			win->y = ws.ws_row / 2 - win->y / 2;
+		case ANSUI_WIN_FLAG_POS_CENTERED:
+			win->cfg->x = (double)ws.ws_col / 2 - (double)win->cfg->w / 2;
+			win->cfg->y = ws.ws_row / 2 - win->cfg->y / 2;
+			break;
+		default:
+		case ANSUI_WIN_FLAG_NONE:
 			break;
 	}
 	
-	//free(cfg);
+	// free(cfg);
 	return win;
 }
 
@@ -174,12 +187,15 @@ int ansuiUpdate(ANSUI_WIN *win, ANSUI_WIN_ATTR attr, ...) {
 
 int ansuiWinDestroy(ANSUI_WIN *win) {
 	// Every malloc on *win is:
-	free(win->px);
+	free(win->pxa);
+	free(win->cfg);
 	free(win);
 	return ANSUI_SUCCESS;
 }
 
 int ansuiQuit() {
+	printf("\033[0m");
+
 	// Free memory got from ansuiInit();
 	close(fd); // file descriptor
 	
@@ -191,7 +207,7 @@ int ansuiQuit() {
 // NOTE: Probably need of a custom made cursor movement
 int ansuiRender(ANSUI_WIN* win) {
 	// Basically all we need is a formated buffer and therefore a pointer to it
-	int char_bufsz = win->w * win->h; // Must be +1 when sent to snprintf();
+	int char_bufsz = win->cfg->w * win->cfg->h; // Must be +1 when sent to snprintf();
 	int ansi_bufsz = char_bufsz * 18; // 9 => Max ANSII String Size => \e[0;107m for example, has 9 chars
 	int bufsz = char_bufsz + ansi_bufsz + 1; // At the end, just append '\0', since buffer has to be detected as a string
 						 // For later on fputs(buffer, stdout);
@@ -205,9 +221,9 @@ int ansuiRender(ANSUI_WIN* win) {
 
 	// DONE: Improve performance by writing to a single buffer and print it out later on
 	// PERF: Probably faster, in need to make any fps counter haha
-	for (int h = 0; h < win->h; h++) {
-		fb += snprintf(buffer + fb, bufsz - fb, "\e[%d;%dH", win->y + h, win->x); // change cursor position | same as setting x and y
-		for (int w = 0; w < win->w; w++) {
+	for (int h = 0; h < win->cfg->h; h++) {
+		fb += snprintf(buffer + fb, bufsz - fb, "\e[%d;%dH", win->cfg->y + h, win->cfg->x); // change cursor position | same as setting x and y
+		for (int w = 0; w < win->cfg->w; w++) {
 			// check if win->config.is_opaque == 0 and if win->pxa->px[i] isn't inside any entity / widget
 			// if not, just move cursor pos to +1
 			// HACK: DIRECTLY PRINTING IT JUST TO SEE IF IT WORKS
@@ -219,12 +235,13 @@ int ansuiRender(ANSUI_WIN* win) {
 				fb += snprintf(buffer + fb, bufsz - fb, "%s", "\e[1C");
 			}
 			*/
-			fb += snprintf(buffer + fb, bufsz - fb, "%s%s%c", win->px[i].bg_color, win->px[i].char_color, win->px[i].c);
+			fb += snprintf(buffer + fb, bufsz - fb, "\033[%dm\033[%dm%c", win->pxa[i].bg_color, win->pxa[i].char_color, win->pxa[i].c);
 			i++;
 		}
 		fb += snprintf(buffer + fb, bufsz - fb, "%s", "\n");
 	}
 
+	fb += snprintf(buffer + fb, bufsz - fb, "%s", "\n");
 	fputs(buffer, stdout);
 	//write(STDOUT_FILENO, buffer, bufsz);
 	//printf("%s\033[1H", ANSUI_PIXEL_RESET_COLOR);
@@ -233,6 +250,6 @@ int ansuiRender(ANSUI_WIN* win) {
 	return ANSUI_SUCCESS;
 }
 
-void ansuiClear() {
-	printf("%s\033[2J\033[1H", glob_cfg.clear_color); // framebuffer size supports current a fixed size
+void ansuiClear(ANSUI_PIXEL_BG_COLOR color) {
+	printf("%s\033[2J\033[1H", color); // framebuffer size supports current a fixed size
 }

@@ -41,38 +41,46 @@ void* ansuiInit(ANSUI_FLAG flag);
 
 // ANSUI_SET_BG/CH_COLOR, BOLD/REGULAR, # (COLOR_RED/BLUE/GREEN)
 
-#define ANSUI_PIXEL_COLOR_CH_RBLACK "\e[0;90m"
-#define ANSUI_PIXEL_COLOR_CH_RRED "\e[0;91m"
-#define ANSUI_PIXEL_COLOR_CH_RGREEN "\e[0;92m"
-#define ANSUI_PIXEL_COLOR_CH_RBLUE "\e[0;94m"
-#define ANSUI_PIXEL_COLOR_CH_RWHITE "\e[0;97m"
+// HACK: MAYBE THIS WOULD SET DIFFERENCE BETWEEN cfg->char_color AND cfg->bg_color;
+// typedef const char* ANSUI_PIXEL_BG_COLOR;
+// typedef const char* ANSUI_PIXEL_CH_COLOR;
 
-#define ANSUI_PIXEL_COLOR_CH_BBLACK "\e[1;90m"
-#define ANSUI_PIXEL_COLOR_CH_BRED "\e[1;91m"
-#define ANSUI_PIXEL_COLOR_CH_BGREEN "\e[1;92m"
-#define ANSUI_PIXEL_COLOR_CH_BBLUE "\e[1;94m"
-#define ANSUI_PIXEL_COLOR_CH_BWHITE "\e[1;97m"
+typedef enum ANSUI_PIXEL_CH_COLOR {
+	CH_RRED = 91,// = "\e[0;91m",
+	CH_RGREEN = 92,// = "\e[0;92m",
+	CH_RBLUE = 94,// = "\e[0;94m",
+	CH_RBLACK = 90,// = "\e[0;90m",
+	CH_RWHITE = 97,// = "\e[0;97m",
 
-#define ANSUI_PIXEL_COLOR_BG_RBLACK "\e[0;40m"
-#define ANSUI_PIXEL_COLOR_BG_RRED "\e[0;41m"
-#define ANSUI_PIXEL_COLOR_BG_RGREEN "\e[0;42m"
-#define ANSUI_PIXEL_COLOR_BG_RBLUE "\e[0;44m"
-#define ANSUI_PIXEL_COLOR_BG_RWHITE "\e[0;47m"
+	CH_BRED = 191,// = "\e[1;91m",
+	CH_BGREEN = 192,// = "\e[1;92m",
+	CH_BBLUE = 194,// = "\e[1;94m",
+	CH_BBLACK = 190,// = "\e[1;90m",
+	CH_BWHITE = 197,// = "\e[1;97m",
+} ANSUI_PIXEL_CH_COLOR;
 
-#define ANSUI_PIXEL_COLOR_BG_BBLACK "\e[0;100m"
-#define ANSUI_PIXEL_COLOR_BG_BRED "\e[0;101m"
-#define ANSUI_PIXEL_COLOR_BG_BGREEN "\e[0;102m"
-#define ANSUI_PIXEL_COLOR_BG_BBLUE "\e[0;104m"
-#define ANSUI_PIXEL_COLOR_BG_BWHITE "\e[0;107m"
+typedef enum ANSUI_PIXEL_BG_COLOR {
+	BG_RBLACK = 40,// = "\e[0;40m",
+	BG_RRED = 41,// = "\e[0;41m",
+	BG_RGREEN = 42,// = "\e[0;42m",
+	BG_RBLUE = 44,// = "\e[0;44m",
+	BG_RWHITE = 47,// = "\e[0;47m",
 
-#define ANSUI_PIXEL_RESET_COLOR "\e[0m"
+	BG_BBLACK = 100,// = "\e[0;100m",
+	BG_BRED = 101,// = "\e[0;101m",
+	BG_BGREEN = 102,// = "\e[0;102m",
+	BG_BBLUE = 104,// = "\e[0;104m",
+	BG_BWHITE = 107,// = "\e[0;107m",
 
-typedef const char* ANSUI_PIXEL_COLOR;
+	BG_RESET = 0,
+} ANSUI_PIXEL_BG_COLOR;
+
+// typedef const char* ANSUI_PIXEL_COLOR;
 
 typedef struct {
 	char c;
-	ANSUI_PIXEL_COLOR char_color;
-	ANSUI_PIXEL_COLOR bg_color;
+	ANSUI_PIXEL_CH_COLOR char_color;
+	ANSUI_PIXEL_BG_COLOR bg_color;
 } ANSUI_PIXEL;
 
 // PERF: Don't think this is needed, just use any array of px and pull stuff from them
@@ -103,20 +111,8 @@ void* ansuiLoadDefaultConfig(ANSUI_LOAD_ATTR attr);
 typedef void* ANSUI_CONFIG;
 
 typedef struct ANSUI_CONFIG_GLOBAL {
-	ANSUI_PIXEL_COLOR clear_color;// = ANSUI_PIXEL_RESET_COLOR;
+	ANSUI_PIXEL_BG_COLOR clear_color;// = ANSUI_PIXEL_RESET_COLOR; => HACK: CLEAR IT ON BACKGROUND
 } ANSUI_CONFIG_GLOBAL;
-
-typedef struct ANSUI_CONFIG_WINDOW {
-	int x;// = 0;
-	int y;// = 0;
-	int w;// = 25;
-	int h;// = 10;
-	char c;// = ' ';
-	ANSUI_PIXEL_COLOR char_color;// = ANSUI_PIXEL_RESET_COLOR;
-	ANSUI_PIXEL_COLOR bg_color;// = ANSUI_PIXEL_COLOR_BG_BRED;
-
-	ANSUI_PIXEL* px;
-} ANSUI_CONFIG_WINDOW;
 
 /*
 typedef struct ANSUI_CONFIG_ENTITY {
@@ -140,8 +136,23 @@ typedef struct ANSUI_CONFIG_WIDGET {
 
 // === WINDOW
 
+// NOTE: Alias just for the sake of having it
+typedef struct ANSUI_WIN_CONFIG {
+	int x;// = 0;
+	int y;// = 0;
+	int w;// = 25;
+	int h;// = 10;
+	char c;// = ' ';
+	ANSUI_PIXEL_CH_COLOR char_color;// = ANSUI_PIXEL_RESET_COLOR;
+	ANSUI_PIXEL_BG_COLOR bg_color;// = ANSUI_PIXEL_COLOR_BG_BRED;
+} ANSUI_WIN_CONFIG;
+
 // NOTE: First have to change config itself, then copy it towards window;
-typedef ANSUI_CONFIG_WINDOW ANSUI_WIN;
+// QT: Probably setting this doesn't also define they're similar to each other
+typedef struct ANSUI_WIN {
+	ANSUI_WIN_CONFIG* cfg;
+	ANSUI_PIXEL* pxa;
+} ANSUI_WIN;
 
 // TODO: SET THESE FLAGS AS BITS
 //	 JUST LIKE: 0x00000000 first one
@@ -151,16 +162,17 @@ typedef ANSUI_CONFIG_WINDOW ANSUI_WIN;
 //	 	    0x00000008
 //	 Or something like that
 typedef enum {
+	ANSUI_WIN_FLAG_NONE,
 	// ANSUI_WIN_TRANSPARENT,
 	// ANSUI_WIN_OPAQUE, // will be pulling ANSUI_WIN_BLANK from here
 			 // probably setting it's "blankness" from their config
 	
-	ANSUI_WIN_POS_CENTERED
+	ANSUI_WIN_FLAG_POS_CENTERED
 } ANSUI_WIN_FLAG;
 
 void ansuiSetFlags(void* cfg, ...);
 
-ANSUI_WIN* ansuiCreateWindow(ANSUI_CONFIG_WINDOW* cfg, ANSUI_WIN_FLAG flag);
+ANSUI_WIN* ansuiCreateWindow(ANSUI_WIN_CONFIG* cfg, ANSUI_WIN_FLAG flag);
 
 // int ansuiUpdate(ANSUI_WIN* win, ANSUI_WIN_ATTR attr, ...);
 
@@ -172,6 +184,7 @@ int ansuiQuit();
 
 int ansuiRender(ANSUI_WIN* win);
 
-void ansuiClear(); // clear whole terminal
+// HACK: CLEAR COLOR MUST BE BACKGROUND
+void ansuiClear(ANSUI_PIXEL_BG_COLOR color); // clear whole terminal
 
 #endif // ANSUI_H
