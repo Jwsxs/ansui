@@ -1,3 +1,4 @@
+#include <cstdarg>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -250,6 +251,10 @@ int ansuiRender(ANSUI_WIN* win) {
 	return ANSUI_SUCCESS;
 }
 
-void ansuiClear(ANSUI_PIXEL_BG_COLOR color) {
-	printf("%s\033[2J\033[1H", color); // framebuffer size supports current a fixed size
+void __ansuiTermClear(ANSUI_PIXEL_BG_COLOR _color) {
+	printf("\033[%dm\033[2J\033[1H", _color);
+}
+
+static inline void __ansuiTermClearDef(void) {
+	__ansuiTermClear(BG_RESET);
 }

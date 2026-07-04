@@ -185,6 +185,9 @@ int ansuiQuit();
 int ansuiRender(ANSUI_WIN* win);
 
 // HACK: CLEAR COLOR MUST BE BACKGROUND
-void ansuiClear(ANSUI_PIXEL_BG_COLOR color); // clear whole terminal
+void __ansuiTermClear(ANSUI_PIXEL_BG_COLOR _color); // clear whole terminal
+
+#define ANSUI_GET_MACRO(_0, NAME, ...) NAME
+#define ansuiClear(...) ANSUI_GET_MACRO(_0, ##__VA_ARGS__, __ansuiTermClear, __ansuiTermClearDef)(__VA_ARGS__)
 
 #endif // ANSUI_H
