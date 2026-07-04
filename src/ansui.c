@@ -1,4 +1,3 @@
-#include <cstdarg>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -145,47 +144,6 @@ ANSUI_WIN* ansuiCreateWindow(ANSUI_WIN_CONFIG* cfg, ANSUI_WIN_FLAG flag) {
 }
 
 
-/*
-int ansuiUpdate(ANSUI_WIN *win, ANSUI_WIN_ATTR attr, ...) {
-	va_list args;
-	va_start(args, attr);
-
-	switch (attr) {
-		case ANSUI_ATTR_PXA_COLOR:
-			win->cfg.color = va_arg(args, ANSUI_PIXEL_COLOR);
-			__ansuiFillPixelColorArray(win, win->cfg.color);
-			break;
-		case ANSUI_ATTR_PXA_FILL_CHAR:
-			win->cfg.fill_char = va_arg(args, int);
-			__ansuiFillPixelCharArray(win, win->cfg.fill_char);
-			break;
-
-		case ANSUI_ATTR_WIN_IS_OPAQUE:
-			//win->config.fill_char = ' ';
-			win->cfg.is_opaque = va_arg(args, int);
-			if (win->cfg.is_opaque == 1) {
-				__ansuiFillPixelColorArray(win, win->cfg.color);
-				__ansuiFillPixelCharArray(win, win->cfg.fill_char);
-			}
-		case ANSUI_ATTR_WIN_HAS_BORDER:
-			// not yet implemented
-			break;
-
-		case ANSUI_ATTR_WIN_POSITION_CENTERED:
-			if (va_arg(args, int) == ANSUI_TRUE) {
-				win->x = ws.ws_col - (win->width / 2);
-				win->y = ws.ws_row - (win->height / 2);
-			}
-			break;
-		default:
-			break;
-	}
-
-	va_end(args);
-	return ANSUI_SUCCESS; // was able to succesfully update, but no error handling yet
-}
-*/
-
 int ansuiWinDestroy(ANSUI_WIN *win) {
 	// Every malloc on *win is:
 	free(win->pxa);
@@ -251,10 +209,6 @@ int ansuiRender(ANSUI_WIN* win) {
 	return ANSUI_SUCCESS;
 }
 
-void __ansuiTermClear(ANSUI_PIXEL_BG_COLOR _color) {
-	printf("\033[%dm\033[2J\033[1H", _color);
-}
-
-static inline void __ansuiTermClearDef(void) {
-	__ansuiTermClear(BG_RESET);
+void ansuiClear(ANSUI_PIXEL_BG_COLOR c) {
+	printf("\033[%d;%dm\033[2J\033[1H", c);
 }

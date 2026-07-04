@@ -114,24 +114,10 @@ typedef struct ANSUI_CONFIG_GLOBAL {
 	ANSUI_PIXEL_BG_COLOR clear_color;// = ANSUI_PIXEL_RESET_COLOR; => HACK: CLEAR IT ON BACKGROUND
 } ANSUI_CONFIG_GLOBAL;
 
-/*
-typedef struct ANSUI_CONFIG_ENTITY {
-	int x = 0;
-	int y = 0;
-	int w = 25;
-	int h = 10;
-	ANSUI_PIXEL_COLOR char_color = ANSUI_PIXEL_RESET_COLOR;
-	ANSUI_PIXEL_COLOR bg_color = ANSUI_PIXEL_COLOR_BG_BRED;
-} ANSUI_CONFIG_ENTITY;
-
-typedef struct ANSUI_CONFIG_WIDGET {
-	int x = 0;
-	int y = 0;
-	int w = 25;
-	int h = 10;
-	ANSUI_PIXEL_COLOR char_color = ANSUI_PIXEL_RESET_COLOR;
-	ANSUI_PIXEL_COLOR bg_color = ANSUI_PIXEL_COLOR_BG_BRED;
-} ANSUI_CONFIG_WIDGET;
+// === ENTITIES / WIDGET / OBJECT
+/* NOTE:
+ * KEEPING ALL OBJECTS / WIDGETS / ENTITIES AS A WINDOW FOR MY OWN SAKE
+ * YOU CAN MOVE / INTERACT WITH THEM BY JUST MESSING WITH THEM CFGs
 */
 
 // === WINDOW
@@ -185,9 +171,6 @@ int ansuiQuit();
 int ansuiRender(ANSUI_WIN* win);
 
 // HACK: CLEAR COLOR MUST BE BACKGROUND
-void __ansuiTermClear(ANSUI_PIXEL_BG_COLOR _color); // clear whole terminal
-
-#define ANSUI_GET_MACRO(_0, NAME, ...) NAME
-#define ansuiClear(...) ANSUI_GET_MACRO(_0, ##__VA_ARGS__, __ansuiTermClear, __ansuiTermClearDef)(__VA_ARGS__)
+void ansuiClear(ANSUI_PIXEL_BG_COLOR c); // clear whole terminal
 
 #endif // ANSUI_H
