@@ -178,7 +178,7 @@ int ansuiRender(ANSUI_WIN* win) {
 
 	int i = 0;
 
-	// DONE: Improve performance by writing to a single buffer and print it out later on
+	// DONE: Improve performance by printing only changed pixels: cursor might move along i
 	// PERF: Probably faster, in need to make any fps counter haha
 	for (int h = 0; h < win->cfg->h; h++) {
 		fb += snprintf(buffer + fb, bufsz - fb, "\e[%d;%dH", win->cfg->y + h, win->cfg->x); // change cursor position | same as setting x and y
@@ -210,5 +210,5 @@ int ansuiRender(ANSUI_WIN* win) {
 }
 
 void ansuiClear(ANSUI_PIXEL_BG_COLOR c) {
-	printf("\033[%d;%dm\033[2J\033[1H", c);
+	printf("\033[%dm\033[2J\033[1H", c);
 }
