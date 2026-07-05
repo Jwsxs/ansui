@@ -30,18 +30,18 @@ static struct winsize __ansuiGetTermSize() {
 	return ws;
 }
 
-// We will have struct winsize at a global scope, outside this local function
-// Therefore, we'd be returning a pointer to this struct
+// NOTE: We will have struct winsize at a global scope, outside this local function
+//	 Therefore, we'd be returning a pointer to this struct
 void* ansuiInit(ANSUI_FLAG flag) {
-	// Initialization consists on retrieving terminal info, like TIOCGWINSZ
-	// Getting to know $HOME, current $PATH, probably some user info and other variables
+	// NOTE: Initialization consists on retrieving terminal info, like TIOCGWINSZ
+	//	 Getting to know $HOME, current $PATH, probably some user info and other variables
 	switch (flag) {
 		default:
 		case ANSUI_FLAG_NONE: // Normal default initialization
 			ws = __ansuiGetTermSize(); // This way we get info about ROWS, COLS
 			return &ws;
 			break;
-		// In case passing, for example, any ANSUI_FLAG that can change our terminal info
+		// TODO: Switch in case passing, for example, any ANSUI_FLAG that can change our terminal info
 		// TODO: setTermSize() with TIOCSWIN
 	}
 }
@@ -72,11 +72,6 @@ void* ansuiLoadDefaultConfig(ANSUI_LOAD_ATTR attr) {
 			win_cfg = __loadWinDefaultConfig();
 			return win_cfg;
 			break; // QT: Is this needed?
-
-		case ANSUI_LOAD_ENTITY_ATTR:
-			//return malloc(sizeof(ANSUI_CONFIG_ENTITY));
-		case ANSUI_LOAD_WIDGET_ATTR:
-			//return malloc(sizeof(ANSUI_CONFIG_WIDGET));
 	}
 }
 
@@ -163,17 +158,25 @@ int ansuiQuit() {
 
 // === RENDER
 
+int __equalPixels(ANSUI_PIXEL px1, ANSUI_PIXEL px2) {
+	if (px1.c != px2.c) return 0;
+	if (px1.bg_color != px2.bg_color) return 0;
+	if (px1.char_color != px2.char_color) return 0;
+	return 1;
+}
+
 // NOTE: Probably need of a custom made cursor movement
 int ansuiRender(ANSUI_WIN* win) {
-	// Basically all we need is a formated buffer and therefore a pointer to it
-	int char_bufsz = win->cfg->w * win->cfg->h; // Must be +1 when sent to snprintf();
-	int ansi_bufsz = char_bufsz * 18; // 9 => Max ANSII String Size => \e[0;107m for example, has 9 chars
-	int bufsz = char_bufsz + ansi_bufsz + 1; // At the end, just append '\0', since buffer has to be detected as a string
-						 // For later on fputs(buffer, stdout);
+	win->prev_pxa = malloc(sizeof(ANSUI_PIXEL) * win->cfg->w * win->cfg->h); // Set them as the same size, so no error
+
+	// NOTE: Basically all we need is a formated buffer and therefore a pointer to it
+	int char_bufsz = win->cfg->w * win->cfg->h; // NOTE: Must be +1 when sent to snprintf();
+	int ansi_bufsz = char_bufsz * 18; // 9 => NOTE: Max ANSII String Size => \e[0;107m for example, has 9 chars
+	int bufsz = char_bufsz + ansi_bufsz + 1; // NOTE: At the end, just append '\0', since buffer has to be detected as a string
+						 // NOTE :For later on fputs(buffer, stdout);
 
 	// Buffer size must be sizeof(char) * bufsz + size of
-	char* buffer = malloc(sizeof(char) * bufsz); // bo tá sendo aqui no tamanho
-
+	char* buffer = malloc(sizeof(char) * bufsz);
 	int fb = 0;
 
 	int i = 0;
@@ -181,31 +184,31 @@ int ansuiRender(ANSUI_WIN* win) {
 	// DONE: Improve performance by printing only changed pixels: cursor might move along i
 	// PERF: Probably faster, in need to make any fps counter haha
 	for (int h = 0; h < win->cfg->h; h++) {
-		fb += snprintf(buffer + fb, bufsz - fb, "\e[%d;%dH", win->cfg->y + h, win->cfg->x); // change cursor position | same as setting x and y
+		int px_amnt = 0;
+		// fb += snprintf(buffer + fb, bufsz - fb, "", win->cfg->y + h, win->cfg->x); // change cursor position | same as setting x and y
 		for (int w = 0; w < win->cfg->w; w++) {
-			// check if win->config.is_opaque == 0 and if win->pxa->px[i] isn't inside any entity / widget
-			// if not, just move cursor pos to +1
-			// HACK: DIRECTLY PRINTING IT JUST TO SEE IF IT WORKS
-			/*
-			if (win->cfg.is_opaque != 0) {
-				//printf("\033[%d;%dH", c_pos[0] + 1, c_pos[1]);
-				fb += snprintf(buffer + fb, bufsz - fb, "%s%c", win->pxa->px[i].color, win->pxa->px[i].c);
+			// HACK: After this appending, we check:
+			// 	 In case it's different, we just remove from it (?)
+			// 	 Do some sort of i--
+			if (__equalPixels(win->prev_pxa[i], win->pxa[i]) == 1) {
+				fb += snprintf(buffer + fb, bufsz - fb, "\033[1C");
 			} else {
-				fb += snprintf(buffer + fb, bufsz - fb, "%s", "\e[1C");
+				fb += snprintf(buffer + fb, bufsz - fb, "\033[%dm\033[%dm%c", win->pxa[i].bg_color, win->pxa[i].char_color, win->pxa[i].c);
+				px_amnt++;
 			}
-			*/
-			fb += snprintf(buffer + fb, bufsz - fb, "\033[%dm\033[%dm%c", win->pxa[i].bg_color, win->pxa[i].char_color, win->pxa[i].c);
 			i++;
 		}
-		fb += snprintf(buffer + fb, bufsz - fb, "%s", "\n");
+		fb += snprintf(buffer + fb, bufsz - fb, "\033[%dHPrinted %d pixels\e[%d;%dH", ws.ws_col, px_amnt, win->cfg->y + h, win->cfg->x);
 	}
 
 	fb += snprintf(buffer + fb, bufsz - fb, "%s", "\n");
 	fputs(buffer, stdout);
-	//write(STDOUT_FILENO, buffer, bufsz);
-	//printf("%s\033[1H", ANSUI_PIXEL_RESET_COLOR);
 
 	free(buffer);
+	
+	// QT: I hope it's not somehow poiting to it;
+	//     Should not give error when running ./demos/window.c for example
+	win->prev_pxa = win->pxa;
 	return ANSUI_SUCCESS;
 }
 
