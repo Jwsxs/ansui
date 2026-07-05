@@ -19,6 +19,15 @@ static ANSUI_CONFIG_GLOBAL glob_cfg;
 #include <unistd.h>
 #include <err.h>
 
+#include <termios.h>
+
+typedef struct __GLOBAL_TERM {
+	ANSUI_WIN* win; // HACK: Pointer to a window's array
+} __GLOBAL_TERM;
+
+static __GLOBAL_TERM __GB_T_; // = malloc(sizeof(__GLOBAL_TERM));
+
+// === INITIALIZATION
 struct winsize ws;
 
 static int fd;
@@ -30,6 +39,9 @@ static struct winsize __ansuiGetTermSize() {
 	return ws;
 }
 
+// HACK: Letting it 
+static termios _oldt;
+
 // NOTE: We will have struct winsize at a global scope, outside this local function
 //	 Therefore, we'd be returning a pointer to this struct
 void* ansuiInit(ANSUI_FLAG flag) {
@@ -38,6 +50,12 @@ void* ansuiInit(ANSUI_FLAG flag) {
 	switch (flag) {
 		default:
 		case ANSUI_FLAG_NONE: // Normal default initialization
+			__GB_T_.win = malloc(sizeof(ANSUI_WIN));
+
+			// HACK: Enforcing ansuiInit() is called => later use on ansuiGetInput() and ansuiQuit()
+			//	 Save old settings -> we'll be changing terminal's modes
+			tcgetattr(STDIN_FILENO, &_oldt);
+
 			ws = __ansuiGetTermSize(); // This way we get info about ROWS, COLS
 			return &ws;
 			break;
@@ -46,11 +64,63 @@ void* ansuiInit(ANSUI_FLAG flag) {
 	}
 }
 
+// === KEYBOARD
+
+typedef enum ANSUI_INPUT {
+	ANSUI_INPUT_KEYBOARD, // TODO: SUPPORT ONLY FOR KEYBOARD, THANKS GOD
+} ANSUI_INPUT;
+
+int __keybHit() {
+	// Copy them stuff into a new termios so we'll change them there and load afterwards
+	termios _newt;
+	// NOTE: Turning off CANONICAL MODE and ECHO
+	// 	 ICANON => Just like terminal editors: any key is sent to process right when pressed
+	// 	 ECHO => Turning off printing them keys, so it's something internal
+	_newt.c_lflag &= ~(ICANON | ECHO);
+	tcsetattr(STDIN_FILENO, 0, &_newt);
+	
+	// Save old flags status F_GETFL => we'll just turn off O_NONBLOCK, no need to wait for inputs
+	int _oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+	fcntl(STDIN_FILENO, F_SETFL, _oldf | O_NONBLOCK);
+	
+	int ch = getchar();
+	// NOTE: Now our ch can either return the actual key pressed, or EOF if none
+	if (ch != EOF) return ANSUI_TRUE;
+	return ch;
+}
+
+// HACK: RIGHT ABOVE ansuiQuit();
+// TODO: We can probably have some ANSUI_HIT_KEY and we'd pass default keys if none are set throughout dev's program
+static void __forceFinishProgram();
+
+void* ansuiGetInput(ANSUI_INPUT* inp, ...) {
+	va_list args;
+	va_start(args, inp);
+
+	switch (inp) {
+		default:
+		case ANSUI_INPUT_KEYBOARD:
+			switch (__keybHit()) {
+				// TODO: Complementing: for example, setting q as default quit key
+				case 'q':
+				case 'Q':
+					__forceFinishProgram();
+					break;
+				default:
+				case EOF:
+					// HACK: Nothing to process
+			}
+			break;
+	}
+	
+	va_end(args);
+}
+
+
 // === ATTRIBUTES
 
 static ANSUI_WIN_CONFIG* __loadWinDefaultConfig() {
 	ANSUI_WIN_CONFIG* cfg = malloc(sizeof(ANSUI_WIN_CONFIG));
-	
 	cfg->x = 0;
 	cfg->y = 0;
 	cfg->w = 25;
@@ -134,6 +204,7 @@ ANSUI_WIN* ansuiCreateWindow(ANSUI_WIN_CONFIG* cfg, ANSUI_WIN_FLAG flag) {
 			break;
 	}
 	
+	__GB_T_.win = realloc(__GB_T_.win, sizeof(__GB_T_) + sizeof(ANSUI_WIN));
 	// free(cfg);
 	return win;
 }
@@ -147,12 +218,18 @@ int ansuiWinDestroy(ANSUI_WIN *win) {
 	return ANSUI_SUCCESS;
 }
 
+static void __forceFinishProgram() {
+	int win_amnt = sizeof(__GB_T_) / sizeof(ANSUI_WIN);
+}
+
 int ansuiQuit() {
 	printf("\033[0m");
 
 	// Free memory got from ansuiInit();
 	close(fd); // file descriptor
 	
+	// HACK: Turning off changed configs on ansuiInit();
+	tcsetattr(STDIN_FILENO, 0, &_oldt);
 	return ANSUI_SUCCESS;
 }
 

@@ -2,14 +2,13 @@
 
 SRC=ansui.c
 
-OBJ=demo.o
-
 if [ "$1" -eq ]; then
 	echo -e "Provide one demo: \x[1m./demos/\[0m"
 fi
 
+OBJ=${1//.c/}
 if [ -f "$1" ]; then
-	gcc "$1" "./src/$SRC" -o $OBJ
+	gcc "$1" "../src/$SRC" -lm -o "$OBJ"
 else
 	echo -e "$1 not found"
 fi
@@ -17,6 +16,4 @@ fi
 if [ -f "$OBJ" ]; then
 	echo -e "Running \033[1m$1\033[0m"
 	./"$OBJ"
-
-	rm ./"$OBJ"
 fi

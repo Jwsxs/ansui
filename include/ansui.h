@@ -16,9 +16,12 @@
 #define ANSUI_INIT_H
 #ifdef ANSUI_INIT_H
 
+// QT: Not being used, what to do?
+/*
 extern struct {
 	struct winsize* ws; // Stuff retrieved from getTermSize() => ./src/ansui_init.c
 } ANSUI_UINFO;
+*/
 
 typedef enum {
 	ANSUI_FLAG_NONE,
@@ -99,8 +102,6 @@ typedef struct {
 typedef enum {
 	ANSUI_LOAD_GLOBAL_ATTR,
 	ANSUI_LOAD_WINDOW_ATTR,
-	ANSUI_LOAD_ENTITY_ATTR,
-	ANSUI_LOAD_WIDGET_ATTR,
 } ANSUI_LOAD_ATTR;
 
 void* ansuiLoadDefaultConfig(ANSUI_LOAD_ATTR attr);
@@ -122,7 +123,7 @@ typedef struct ANSUI_CONFIG_GLOBAL {
 
 // === WINDOW
 
-// NOTE: Alias just for the sake of having it
+// NOTE: First create a window config, later on apply it on a window
 typedef struct ANSUI_WIN_CONFIG {
 	int x;// = 0;
 	int y;// = 0;
@@ -133,11 +134,10 @@ typedef struct ANSUI_WIN_CONFIG {
 	ANSUI_PIXEL_BG_COLOR bg_color;// = ANSUI_PIXEL_COLOR_BG_BRED;
 } ANSUI_WIN_CONFIG;
 
-// NOTE: First have to change config itself, then copy it towards window;
-// QT: Probably setting this doesn't also define they're similar to each other
 typedef struct ANSUI_WIN {
 	ANSUI_WIN_CONFIG* cfg;
 	ANSUI_PIXEL* pxa;
+	ANSUI_PIXEL* prev_pxa;
 } ANSUI_WIN;
 
 // TODO: SET THESE FLAGS AS BITS
@@ -159,8 +159,6 @@ typedef enum {
 void ansuiSetFlags(void* cfg, ...);
 
 ANSUI_WIN* ansuiCreateWindow(ANSUI_WIN_CONFIG* cfg, ANSUI_WIN_FLAG flag);
-
-// int ansuiUpdate(ANSUI_WIN* win, ANSUI_WIN_ATTR attr, ...);
 
 int ansuiWinDestroy(ANSUI_WIN* win);
 
