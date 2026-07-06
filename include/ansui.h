@@ -25,11 +25,23 @@ extern struct {
 
 typedef enum {
 	ANSUI_FLAG_NONE,
+	ANSUI_FLAG_INPUT,
 } ANSUI_FLAG;
 
 void* ansuiInit(ANSUI_FLAG flag);
 
 #endif // ANSUI_INIT_H
+
+// === KEYBOARD
+
+typedef enum ANSUI_INPUT {
+	ANSUI_INPUT_KEYBOARD, // TODO: SUPPORT ONLY FOR KEYBOARD, THANKS GOD
+} ANSUI_INPUT;
+
+// HACK: This one for configuration -> "initializing"
+int ansuiGetKeyPressed();
+
+// HACK: This one to fetch actual keys pressed
 
 // === PIXEL
 
@@ -148,12 +160,9 @@ typedef struct ANSUI_WIN {
 //	 	    0x00000008
 //	 Or something like that
 typedef enum {
+	ANSUI_WIN_FLAG_RESIZE,
+	ANSUI_WIN_FLAG_POS_CENTERED,
 	ANSUI_WIN_FLAG_NONE,
-	// ANSUI_WIN_TRANSPARENT,
-	// ANSUI_WIN_OPAQUE, // will be pulling ANSUI_WIN_BLANK from here
-			 // probably setting it's "blankness" from their config
-	
-	ANSUI_WIN_FLAG_POS_CENTERED
 } ANSUI_WIN_FLAG;
 
 void ansuiSetFlags(void* cfg, ...);

@@ -8,7 +8,7 @@ int main() {
 	// Initializing ANSUI with no flag being used
 	// It is important to initialize since ansuiRender() needs info gathered on it;
 	ansuiInit(ANSUI_FLAG_NONE);
-	
+
 	// For each window, we need a config struct
 	ANSUI_WIN_CONFIG* cfg1 = ansuiLoadDefaultConfig(ANSUI_LOAD_WINDOW_ATTR);
 	cfg1->w = 500;
@@ -28,7 +28,6 @@ int main() {
 	ANSUI_WIN* win2 = ansuiCreateWindow(cfg2, ANSUI_WIN_FLAG_NONE);	
 
 	ansuiClear(BG_RESET);
-
 
 	for (int frame = 0; frame < 20; frame++) {
 		ansuiClear(BG_RESET);
