@@ -11,7 +11,7 @@
  == all functions start with ansui#();
 */
 
-static ANSUI_CONFIG_GLOBAL glob_cfg;
+static struct ANSUI_CONFIG_GLOBAL glob_cfg;
 // TODO: Get this shitass pussy to work
 // static ANSUI_CONFIG cfg;
 
@@ -20,38 +20,6 @@ static ANSUI_CONFIG_GLOBAL glob_cfg;
 #include <err.h>
 
 #include <termios.h>
-
-typedef struct __GLOBAL_TERM {
-	ANSUI_WIN* win; // HACK: Pointer to a window's array
-} __GLOBAL_TERM;
-
-static __GLOBAL_TERM __GB_T_; // = malloc(sizeof(__GLOBAL_TERM));
-
-// === KEYBOARD
-
-// HACK: Letting it global can allow us to correctly unset them changed flags
-struct termios _oldt;
-
-int ansuiGetKeyPressed() {
-	tcgetattr(STDIN_FILENO, &_oldt);
-
-	struct termios _newt;
-	// NOTE: Turning off CANONICAL MODE and ECHO
-	// 	 ICANON => Just like terminal editors: any key is sent to process right when pressed
-	// 	 ECHO => Turning off printing them keys, so it's something internal
-	_newt.c_lflag &= ~(ICANON | ECHO);
-	tcsetattr(STDIN_FILENO, 0, &_newt);
-
-	// Save old flags status F_GETFL => we'll just turn off O_NONBLOCK, no need to wait for inputs
-	int _oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
-	fcntl(STDIN_FILENO, F_SETFL, _oldf | O_NONBLOCK);
-	int ch = getchar();
-	
-
-	// NOTE: Now our ch can either return the actual key pressed, or EOF if none
-	if (ch != EOF) return 0;
-	return ch;
-}
 
 // === INITIALIZATION
 struct winsize ws;
@@ -65,6 +33,17 @@ static struct winsize __ansuiGetTermSize() {
 	return ws;
 }
 
+static struct termios __oldt;
+
+void __configKeyb(struct termios* __newt) {
+	*__newt = __oldt;
+	__newt->c_lflag &= ~(ICANON | ECHO);
+	tcsetattr(STDIN_FILENO, 0, __newt);
+
+	__oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+	fcntl(STDIN_FILENO, F_SETFL, __oldf | O_NONBLOCK);
+}
+
 // NOTE: We will have struct winsize at a global scope, outside this local function
 //	 Therefore, we'd be returning a pointer to this struct
 void* ansuiInit(ANSUI_FLAG flag) {
@@ -73,16 +52,37 @@ void* ansuiInit(ANSUI_FLAG flag) {
 	switch (flag) {
 		default:
 		case ANSUI_FLAG_NONE: // Normal default initialization
-			__GB_T_.win = malloc(sizeof(ANSUI_WIN));
-
 			// HACK: Enforcing ansuiInit() is called => later use on ansuiGetInput() and ansuiQuit()
 			//	 Save old settings -> we'll be changing terminal's modes
 			ws = __ansuiGetTermSize(); // This way we get info about ROWS, COLS
+
+			static struct termios __newt;
+			__configKeyb(&__newt);
+
+			// Returning only &ws since that's all it's needed to return => input keyboard should be fine everywhere
 			return &ws;
 			break;
 		// TODO: Switch in case passing, for example, any ANSUI_FLAG that can change our terminal info
 		// TODO: setTermSize() with TIOCSWIN
 	}
+}
+
+// === KEYBOARD
+
+// HACK: Global __curntKey for check on release key;
+static ANSUI_KEYP __curntKey;
+
+ANSUI_KEYP ansuiGetKeyPressed() {
+	return ANSUI_KEY_NONE;
+}
+
+// QT: Not really needed, tho could be used somehow
+ANSUI_KEYR ansuiGetKeyReleased() {
+	// TODO: Instead of checking current pressed,
+	// check __curntKey that will be fetched from ansuiGetKeyPressed()
+	// If it's still the same, it wasn't released.
+
+	return ANSUI_KEY_NONE;
 }
 
 // === ATTRIBUTES
@@ -141,10 +141,7 @@ void __ansuiFillPixelArray(int size, ANSUI_PIXEL* pxa, ANSUI_WIN_CONFIG* cfg) {
 	}
 }
 
-// TODO: Might look better to load into a cfg and just pass it as a whole on ansuiCreateWindow, but conceptually it's the same
-// NOTE: Will be letting this one until some more advanced/complex stuff (for me) comes upon my mind and I have to remake it by a whole
-
-// TODO: Understand what type of shit I've messed changing these config stuff
+// HACK: Will be letting this one until some more advanced/complex stuff (for me) comes upon my mind and I have to remake it by a whole
 ANSUI_WIN* ansuiCreateWindow(ANSUI_WIN_CONFIG* cfg, ANSUI_WIN_FLAG flag) {
 	// NOTE: When applying win = cfg, segfault occurs, even tho ANSUI_WIN is ANSUI_CONFIG_WINDOW; no idea
 	ANSUI_WIN* win = malloc(sizeof(ANSUI_WIN));
@@ -166,8 +163,6 @@ ANSUI_WIN* ansuiCreateWindow(ANSUI_WIN_CONFIG* cfg, ANSUI_WIN_FLAG flag) {
 	}
 
 	__ansuiFillPixelArray(win->cfg->w * win->cfg->h, win->pxa, win->cfg);
-	
-	__GB_T_.win = realloc(__GB_T_.win, sizeof(__GB_T_) + sizeof(ANSUI_WIN));
 	// free(cfg);
 	return win;
 }
@@ -177,16 +172,10 @@ int ansuiWinDestroy(ANSUI_WIN *win) {
 	// Every malloc on *win is:
 	free(win->pxa);
 	free(win->cfg);
+
+	// And free the window itself;
 	free(win);
 	return ANSUI_SUCCESS;
-}
-
-static void __forceFinishProgram() {
-	int _win_amnt = sizeof(__GB_T_);
-	
-	for (int _win = 0; _win < _win_amnt; _win++) {
-		free(&__GB_T_.win[_win]);
-	}
 }
 
 int ansuiQuit() {
@@ -196,7 +185,8 @@ int ansuiQuit() {
 	close(fd); // file descriptor
 	
 	// HACK: Turning off changed configs on ansuiInit();
-	tcsetattr(STDIN_FILENO, 0, &_oldt);
+	tcsetattr(STDIN_FILENO, TCSANOW, &__oldt);
+	fcntl(STDIN_FILENO, F_SETFL, __oldf);
 
 	abort();
 	return ANSUI_SUCCESS;
