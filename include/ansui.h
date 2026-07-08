@@ -25,7 +25,6 @@ extern struct {
 
 typedef enum {
 	ANSUI_FLAG_NONE,
-	ANSUI_FLAG_INPUT,
 } ANSUI_FLAG;
 
 void* ansuiInit(ANSUI_FLAG flag);
@@ -34,15 +33,22 @@ void* ansuiInit(ANSUI_FLAG flag);
 
 // === KEYBOARD
 
-typedef enum ANSUI_INPUT {
-	ANSUI_INPUT_KEYBOARD, // TODO: SUPPORT ONLY FOR KEYBOARD, THANKS GOD
-} ANSUI_INPUT;
+// QT: One function to whole keys pressed and released (?)
 
-// HACK: This one for configuration -> "initializing"
-int ansuiGetKeyPressed();
+typedef enum __KEYS {
+	ANSUI_KEY_NONE = 0x00000000,
+	ANSUI_KEY_A = 0x00000065,
+	// TODO: B TO Y
+	ANSUI_KEY_Z = 0x00000090,
+} __KEYS;
 
-// HACK: This one to fetch actual keys pressed
+// HACK: Set each variant
+typedef __KEYS ANSUI_KEYP;
+typedef __KEYS ANSUI_KEYR;
 
+// HACK: 
+ANSUI_KEYP ansuiGetKeyPressed();
+ANSUI_KEYR ansuiGetKeyReleased();
 // === PIXEL
 
 // ANSUI_PIXEL_COLOR_X_YC
@@ -92,7 +98,7 @@ typedef enum ANSUI_PIXEL_BG_COLOR {
 
 // typedef const char* ANSUI_PIXEL_COLOR;
 
-typedef struct {
+typedef struct ANSUI_PIXEL {
 	char c;
 	ANSUI_PIXEL_CH_COLOR char_color;
 	ANSUI_PIXEL_BG_COLOR bg_color;
@@ -123,7 +129,7 @@ void* ansuiLoadDefaultConfig(ANSUI_LOAD_ATTR attr);
 // HACK: FOR USE GENERICALLY
 typedef void* ANSUI_CONFIG;
 
-typedef struct ANSUI_CONFIG_GLOBAL {
+struct ANSUI_CONFIG_GLOBAL {
 	ANSUI_PIXEL_BG_COLOR clear_color;// = ANSUI_PIXEL_RESET_COLOR; => HACK: CLEAR IT ON BACKGROUND
 } ANSUI_CONFIG_GLOBAL;
 
@@ -148,8 +154,8 @@ typedef struct ANSUI_WIN_CONFIG {
 
 typedef struct ANSUI_WIN {
 	ANSUI_WIN_CONFIG* cfg;
-	ANSUI_PIXEL* pxa;
-	ANSUI_PIXEL* prev_pxa;
+	struct ANSUI_PIXEL* pxa;
+	struct ANSUI_PIXEL* prev_pxa;
 } ANSUI_WIN;
 
 // TODO: SET THESE FLAGS AS BITS

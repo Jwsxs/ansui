@@ -31,7 +31,6 @@ int main() {
 
 	for (int frame = 0; frame < 20; frame++) {
 		ansuiClear(BG_RESET);
-		cfg2->x-=10;
 
 		ansuiRender(win1);
 		ansuiRender(win2);

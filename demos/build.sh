@@ -7,6 +7,14 @@ if [ "$1" -eq ]; then
 fi
 
 OBJ=${1//.c/}
+
+if [ -f "$OBJ" ]; then
+	echo -e "Cleaning $OBJ"
+	rm "$OBJ"
+else
+	echo -e "No $OBJ already existent"
+fi
+
 if [ -f "$1" ]; then
 	gcc "$1" "../src/$SRC" -lm -o "$OBJ"
 else
