@@ -2,8 +2,10 @@
 
 SRC=ansui.c
 
-if [ "$1" -eq ]; then
-	echo -e "Provide one demo: \x[1m./demos/\[0m"
+if [ "$#" -eq 0 ]; then
+	echo -e "Provide one demo from:"
+	ls .
+	exit 1
 fi
 
 OBJ=${1//.c/}
@@ -11,8 +13,6 @@ OBJ=${1//.c/}
 if [ -f "$OBJ" ]; then
 	echo -e "Cleaning $OBJ"
 	rm "$OBJ"
-else
-	echo -e "No $OBJ already existent"
 fi
 
 if [ -f "$1" ]; then
@@ -24,4 +24,12 @@ fi
 if [ -f "$OBJ" ]; then
 	echo -e "Running \033[1m$1\033[0m"
 	./"$OBJ"
+fi
+
+if [ "$#" -ne 2 ]; then
+	rm ./"$OBJ"
+else
+	if [ "$2" = "-s" ] || [ "$2" = "--save" ]; then
+		echo -e "Saving \e[1m$OBJ\e[0m"
+	fi
 fi

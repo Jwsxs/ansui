@@ -25,6 +25,7 @@ extern struct {
 
 typedef enum {
 	ANSUI_FLAG_NONE,
+	ANSUI_FLAG_INPUT,
 } ANSUI_FLAG;
 
 void* ansuiInit(ANSUI_FLAG flag);
@@ -36,10 +37,11 @@ void* ansuiInit(ANSUI_FLAG flag);
 // QT: One function to whole keys pressed and released (?)
 
 typedef enum __KEYS {
-	ANSUI_KEY_NONE = 0x00000000,
-	ANSUI_KEY_A = 0x00000065,
+	ANSUI_KEY_NONE = 00,
+	ANSUI_KEY_A = 65,
 	// TODO: B TO Y
-	ANSUI_KEY_Z = 0x00000090,
+	ANSUI_KEY_Q = 81,
+	ANSUI_KEY_Z = 90,
 } __KEYS;
 
 // HACK: Set each variant
@@ -47,8 +49,7 @@ typedef __KEYS ANSUI_KEYP;
 typedef __KEYS ANSUI_KEYR;
 
 // HACK: 
-ANSUI_KEYP ansuiGetKeyPressed();
-ANSUI_KEYR ansuiGetKeyReleased();
+ANSUI_KEYP ansuiGetKey();
 // === PIXEL
 
 // ANSUI_PIXEL_COLOR_X_YC
@@ -129,7 +130,7 @@ void* ansuiLoadDefaultConfig(ANSUI_LOAD_ATTR attr);
 // HACK: FOR USE GENERICALLY
 typedef void* ANSUI_CONFIG;
 
-struct ANSUI_CONFIG_GLOBAL {
+typedef struct ANSUI_CONFIG_GLOBAL {
 	ANSUI_PIXEL_BG_COLOR clear_color;// = ANSUI_PIXEL_RESET_COLOR; => HACK: CLEAR IT ON BACKGROUND
 } ANSUI_CONFIG_GLOBAL;
 

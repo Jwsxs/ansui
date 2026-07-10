@@ -62,7 +62,7 @@ static void clear_pxa(ANSUI_WIN* win) {
 }
 
 int main() {
-	struct winsize* ws = (struct winsize*)ansuiInit(ANSUI_FLAG_NONE);
+	struct winsize* ws = (struct winsize*)ansuiInit(ANSUI_FLAG_INPUT);
 	int term_w = ws->ws_col;
 	int term_h = ws->ws_row;
 
@@ -80,7 +80,11 @@ int main() {
 	int cy = cfg->h / 2;
 	float scale = (cfg->h < cfg->w ? cfg->h : cfg->w) * 0.35f;
 
-	for (int frame = 0; frame < 60000; frame++) {
+	int running = 1;
+	while (running) {
+		ansuiClear(BG_BBLACK);
+		
+		if (ansuiGetKey() == ANSUI_KEY_Q) running = 0;
 		clear_pxa(win);
 
 		Vec3 proj[8];
@@ -104,13 +108,12 @@ int main() {
 			draw_line(win, (int)a.x, (int)a.y, (int)b.x, (int)b.y, '#');
 		}
 
-		ansuiClear(BG_RBLACK);
 		ansuiRender(win);
 
 		angle_x += 0.04f;
 		angle_y += 0.07f;
 
-		usleep(30000); // ~33fps
+		usleep(60000);
 	}
 
 	ansuiWinDestroy(win);

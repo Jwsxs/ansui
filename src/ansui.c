@@ -1,3 +1,4 @@
+#include <bits/time.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,14 +13,13 @@
 */
 
 static struct ANSUI_CONFIG_GLOBAL glob_cfg;
+int __debugMode = 1; // Could be changed
 // TODO: Get this shitass pussy to work
 // static ANSUI_CONFIG cfg;
 
 #include <fcntl.h>
 #include <unistd.h>
 #include <err.h>
-
-#include <termios.h>
 
 // === INITIALIZATION
 struct winsize ws;
@@ -33,16 +33,35 @@ static struct winsize __ansuiGetTermSize() {
 	return ws;
 }
 
+#include <termios.h>
+
 static struct termios __oldt;
+static int __oldf;
 
-void __configKeyb(struct termios* __newt) {
-	*__newt = __oldt;
-	__newt->c_lflag &= ~(ICANON | ECHO);
-	tcsetattr(STDIN_FILENO, 0, __newt);
+static struct termios __newt;
 
+static int __termiAttrWasChanged = 0;
+
+static void __configKeyb() {
+	tcgetattr(STDIN_FILENO, &__oldt);
+	// Save default terminal configs
+	__newt = __oldt;
+	
+	// Sets off ICANON and ECHO
+	__newt.c_lflag &= ~(ICANON | ECHO);
+
+	// Retrieve default flags
 	__oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+	
+	// Sets them attributes as the same as __newt
+	tcsetattr(STDIN_FILENO, 0, &__newt);
+	// And flags with no block, change it at current time
 	fcntl(STDIN_FILENO, F_SETFL, __oldf | O_NONBLOCK);
 }
+
+#include <time.h>
+
+static struct timespec __lastTick, __curntTick;
 
 // NOTE: We will have struct winsize at a global scope, outside this local function
 //	 Therefore, we'd be returning a pointer to this struct
@@ -50,39 +69,40 @@ void* ansuiInit(ANSUI_FLAG flag) {
 	// NOTE: Initialization consists on retrieving terminal info, like TIOCGWINSZ
 	//	 Getting to know $HOME, current $PATH, probably some user info and other variables
 	switch (flag) {
-		default:
-		case ANSUI_FLAG_NONE: // Normal default initialization
-			// HACK: Enforcing ansuiInit() is called => later use on ansuiGetInput() and ansuiQuit()
-			//	 Save old settings -> we'll be changing terminal's modes
-			ws = __ansuiGetTermSize(); // This way we get info about ROWS, COLS
-
-			static struct termios __newt;
-			__configKeyb(&__newt);
-
-			// Returning only &ws since that's all it's needed to return => input keyboard should be fine everywhere
-			return &ws;
-			break;
 		// TODO: Switch in case passing, for example, any ANSUI_FLAG that can change our terminal info
 		// TODO: setTermSize() with TIOCSWIN
+		case ANSUI_FLAG_INPUT:
+			__termiAttrWasChanged = 1;
+			__configKeyb();
+
+			clock_gettime(CLOCK_MONOTONIC, &__lastTick);
+			break;
+
+		default:
+		case ANSUI_FLAG_NONE: // Normal default initialization
+			break;
 	}
+
+	// HACK: Enforcing ansuiInit() is called => later use on ansuiGetInput() and ansuiQuit()
+	//	Save old settings -> we'll be changing terminal's modes
+	ws = __ansuiGetTermSize(); // This way we get info about ROWS, COLS
+
+	// Returning only &ws since that's all it's needed to return => input keyboard should be fine everywhere
+	return &ws;
 }
 
 // === KEYBOARD
 
 // HACK: Global __curntKey for check on release key;
-static ANSUI_KEYP __curntKey;
+ANSUI_KEYP ansuiGetKey() {
+	int ch = getc(stdin);
 
-ANSUI_KEYP ansuiGetKeyPressed() {
-	return ANSUI_KEY_NONE;
-}
-
-// QT: Not really needed, tho could be used somehow
-ANSUI_KEYR ansuiGetKeyReleased() {
-	// TODO: Instead of checking current pressed,
-	// check __curntKey that will be fetched from ansuiGetKeyPressed()
-	// If it's still the same, it wasn't released.
-
-	return ANSUI_KEY_NONE;
+	if (ch == EOF) {
+		return ANSUI_KEY_NONE;
+	}
+	// HACK: Probably will need to iterate through every possible
+	//	I'll mess only with ASCII Alphabetical keys
+	return (ANSUI_KEYP)ch;
 }
 
 // === ATTRIBUTES
@@ -183,12 +203,14 @@ int ansuiQuit() {
 
 	// Free memory got from ansuiInit();
 	close(fd); // file descriptor
-	
-	// HACK: Turning off changed configs on ansuiInit();
-	tcsetattr(STDIN_FILENO, TCSANOW, &__oldt);
-	fcntl(STDIN_FILENO, F_SETFL, __oldf);
 
-	abort();
+	// HACK: Turning off changed configs on ansuiInit();
+
+	if (__termiAttrWasChanged) {
+		tcsetattr(STDIN_FILENO, 0, &__oldt);
+		fcntl(STDIN_FILENO, F_SETFL, __oldf);
+	}
+
 	return ANSUI_SUCCESS;
 }
 
@@ -199,6 +221,17 @@ int __equalPixels(ANSUI_PIXEL px1, ANSUI_PIXEL px2) {
 	if (px1.bg_color != px2.bg_color) return 0;
 	if (px1.char_color != px2.char_color) return 0;
 	return 1;
+}
+
+static float __calcGetFPS() {
+	clock_gettime(1, &__curntTick);
+	// HACK: Get each second and nanosecond. Divide by milisseconds
+	double __d = (__curntTick.tv_sec - __lastTick.tv_sec) + (__curntTick.tv_nsec - __lastTick.tv_nsec) / 1e9;
+	__lastTick = __curntTick;
+
+	// NOTE: Should wait for finishing of while loop on dev's code
+	// TODO: 1.0 can be set as FPS_MAX
+	return (1.0 / __d);
 }
 
 // NOTE: Probably need of a custom made cursor movement
@@ -216,7 +249,7 @@ int ansuiRender(ANSUI_WIN* win) {
 	int fb = 0;
 
 	int i = 0;
-
+	
 	// DONE: Improve performance by printing only changed pixels: cursor might move along i
 	// PERF: Probably faster, in need to make any fps counter haha
 	for (int h = 0; h < win->cfg->h; h++) {
@@ -234,7 +267,8 @@ int ansuiRender(ANSUI_WIN* win) {
 			}
 			i++;
 		}
-		fb += snprintf(buffer + fb, bufsz - fb, "\033[%dHPrinted %d pixels\e[%d;%dH", ws.ws_col, px_amnt, win->cfg->y + h, win->cfg->x);
+		if (__debugMode)
+			fb += snprintf(buffer + fb, bufsz - fb, "\e[0m\033[%dHPrinted %d pixels | FPS: %f\e[%d;%dH", ws.ws_col, px_amnt, win->cfg->y + h, win->cfg->x, __calcGetFPS());
 	}
 
 	fb += snprintf(buffer + fb, bufsz - fb, "%s", "\n");
