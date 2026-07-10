@@ -35,12 +35,35 @@ void* ansuiInit(ANSUI_FLAG flag);
 // === KEYBOARD
 
 // QT: One function to whole keys pressed and released (?)
-
+// HACK: Check ansuiGetKey() => these are uppercase.
+// 	In case of ch > 97 (lowercase a), then subtract 32 from it
 typedef enum __KEYS {
 	ANSUI_KEY_NONE = 00,
 	ANSUI_KEY_A = 65,
-	// TODO: B TO Y
+	ANSUI_KEY_B = 66,
+	ANSUI_KEY_C = 67,
+	ANSUI_KEY_D = 68,
+	ANSUI_KEY_E = 69,
+	ANSUI_KEY_F = 70,
+	ANSUI_KEY_G = 71,
+	ANSUI_KEY_H = 72,
+	ANSUI_KEY_I = 73,
+	ANSUI_KEY_J = 74,
+	ANSUI_KEY_K = 75,
+	ANSUI_KEY_L = 76,
+	ANSUI_KEY_M = 77,
+	ANSUI_KEY_N = 78,
+	ANSUI_KEY_O = 79,
+	ANSUI_KEY_P = 80,
 	ANSUI_KEY_Q = 81,
+	ANSUI_KEY_R = 82,
+	ANSUI_KEY_S = 83,
+	ANSUI_KEY_T = 84,
+	ANSUI_KEY_U = 85,
+	ANSUI_KEY_V = 86,
+	ANSUI_KEY_W = 87,
+	ANSUI_KEY_X = 88,
+	ANSUI_KEY_Y = 89,
 	ANSUI_KEY_Z = 90,
 } __KEYS;
 

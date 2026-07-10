@@ -102,7 +102,7 @@ ANSUI_KEYP ansuiGetKey() {
 	}
 	// HACK: Probably will need to iterate through every possible
 	//	I'll mess only with ASCII Alphabetical keys
-	return (ANSUI_KEYP)ch;
+	return (ch >= 97) ? (ANSUI_KEYP)ch - 32 : (ANSUI_KEYP)ch;
 }
 
 // === ATTRIBUTES
@@ -268,7 +268,7 @@ int ansuiRender(ANSUI_WIN* win) {
 			i++;
 		}
 		if (__debugMode)
-			fb += snprintf(buffer + fb, bufsz - fb, "\e[0m\033[%dHPrinted %d pixels | FPS: %f\e[%d;%dH", ws.ws_col, px_amnt, win->cfg->y + h, win->cfg->x, __calcGetFPS());
+			fb += snprintf(buffer + fb, bufsz - fb, "\e[0m\033[%dHPrinted %d pixels | FPS: %f\e[%d;%dH", ws.ws_col, px_amnt, __calcGetFPS(), win->cfg->y + h, win->cfg->x);
 	}
 
 	fb += snprintf(buffer + fb, bufsz - fb, "%s", "\n");
