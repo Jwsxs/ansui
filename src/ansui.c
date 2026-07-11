@@ -13,9 +13,7 @@
 */
 
 static struct ANSUI_CONFIG_GLOBAL glob_cfg;
-int __debugMode = 1; // Could be changed
-// TODO: Get this shitass pussy to work
-// static ANSUI_CONFIG cfg;
+static int __debugMode = 1; // Could be changed
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -83,7 +81,7 @@ void* ansuiInit(ANSUI_FLAG flag) {
 			break;
 	}
 
-	// HACK: Enforcing ansuiInit() is called => later use on ansuiGetInput() and ansuiQuit()
+	// DONE: Enforcing ansuiInit() is called => later use on ansuiGetInput() and ansuiQuit()
 	//	Save old settings -> we'll be changing terminal's modes
 	ws = __ansuiGetTermSize(); // This way we get info about ROWS, COLS
 
@@ -93,16 +91,11 @@ void* ansuiInit(ANSUI_FLAG flag) {
 
 // === KEYBOARD
 
-// HACK: Global __curntKey for check on release key;
-ANSUI_KEYP ansuiGetKey() {
+ANSUI_KEY ansuiGetKey() {
 	int ch = getc(stdin);
+	if (ch == EOF) { return ANSUI_KEY_NONE; }
 
-	if (ch == EOF) {
-		return ANSUI_KEY_NONE;
-	}
-	// HACK: Probably will need to iterate through every possible
-	//	I'll mess only with ASCII Alphabetical keys
-	return (ch >= 97) ? (ANSUI_KEYP)ch - 32 : (ANSUI_KEYP)ch;
+	return (ch >= 97) ? (ANSUI_KEY)ch - 32 : (ANSUI_KEY)ch;
 }
 
 // === ATTRIBUTES
@@ -135,7 +128,7 @@ void* ansuiLoadDefaultConfig(ANSUI_LOAD_ATTR attr) {
 
 // ===
 
-void __ansuiResizeWinOutOfBorder(ANSUI_WIN* win) {
+static void __ansuiResizeWinOutOfBorder(ANSUI_WIN* win) {
 	if (win->cfg->w <= ws.ws_col && win->cfg->x + win->cfg->w > ws.ws_col) {
 		win->cfg->x -= (win->cfg->x + win->cfg->w - ws.ws_col);
 	}
@@ -153,7 +146,7 @@ void __ansuiResizeWinOutOfBorder(ANSUI_WIN* win) {
 }
 
 // HACK: BOTH OF THESE
-void __ansuiFillPixelArray(int size, ANSUI_PIXEL* pxa, ANSUI_WIN_CONFIG* cfg) {
+static void __ansuiFillPixelArray(int size, ANSUI_PIXEL* pxa, ANSUI_WIN_CONFIG* cfg) {
 	for (int i = 0; i < size; i++) {
 		pxa[i].c = cfg->c;
 		pxa[i].char_color = cfg->char_color;
@@ -249,9 +242,8 @@ int ansuiRender(ANSUI_WIN* win) {
 	int fb = 0;
 
 	int i = 0;
-	
-	// DONE: Improve performance by printing only changed pixels: cursor might move along i
-	// PERF: Probably faster, in need to make any fps counter haha
+
+	// DONE: Probably faster, in need to make any fps counter haha
 	for (int h = 0; h < win->cfg->h; h++) {
 		int px_amnt = 0;
 		// fb += snprintf(buffer + fb, bufsz - fb, "", win->cfg->y + h, win->cfg->x); // change cursor position | same as setting x and y
@@ -273,11 +265,12 @@ int ansuiRender(ANSUI_WIN* win) {
 
 	fb += snprintf(buffer + fb, bufsz - fb, "%s", "\n");
 	fputs(buffer, stdout);
-
+	
+	// HACK: Free buffer for use of it again on a next render calls.
+	//	Although shadowing is quite reinforced there
+	//	Save memory space
 	free(buffer);
 	
-	// QT: I hope it's not somehow poiting to it;
-	//     Should not give error when running ./demos/window.c for example
 	win->prev_pxa = win->pxa;
 	return ANSUI_SUCCESS;
 }

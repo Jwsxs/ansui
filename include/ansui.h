@@ -24,8 +24,11 @@ extern struct {
 */
 
 typedef enum {
-	ANSUI_FLAG_NONE,
-	ANSUI_FLAG_INPUT,
+	ANSUI_FLAG_NONE		= 0x0000,
+	ANSUI_FLAG_DEBUG	= 0xf000,
+
+	ANSUI_FLAG_INPUT	= 0x0001,
+	// ANSUI_FLAG_VIDEO	= 0x0002, // TODO: Can probably add texture mapping support
 } ANSUI_FLAG;
 
 void* ansuiInit(ANSUI_FLAG flag);
@@ -67,12 +70,12 @@ typedef enum __KEYS {
 	ANSUI_KEY_Z = 90,
 } __KEYS;
 
-// HACK: Set each variant
-typedef __KEYS ANSUI_KEYP;
-typedef __KEYS ANSUI_KEYR;
+// HACK:
+typedef __KEYS ANSUI_KEY;
 
-// HACK: 
-ANSUI_KEYP ansuiGetKey();
+// HACK: Set each variant
+
+ANSUI_KEY ansuiGetKey();
 // === PIXEL
 
 // ANSUI_PIXEL_COLOR_X_YC
