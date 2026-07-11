@@ -1,5 +1,5 @@
 # ANSUI
-Standing for ANSII TUI
+Stands for ANSII TUI
 
 ## ABOUT IT
 Are you sick of having to handle your terminal all the time?  
@@ -20,7 +20,8 @@ Huge inspiration on SDL's media workaround, planning to add more support for CLI
 
 ## EXAMPLES
 You can find a lot of examples on `demos/`, just run `./build.sh { example.c }` and you'll run the example code you selected  
-[!Note] When the shell script is done, it also removes the compiled version of the code. For saving it - if you ever want to `gdb` it - run with `-s` or `--saved` parameter.  
+> [!Note]
+> When the shell script is done, it also removes the compiled version of the code. For saving it - if you ever want to `gdb` it - run with `-s` or `--saved` parameter.  
 
 --- WINDOW CREATION
 Anyway, the most basic script _for window creation_ is:  
@@ -56,5 +57,5 @@ Where:
 
 ### Moving to Codeberg
 
-I'm planning to move my projects onto Codeberg ( since I don't want any AI judging my code haha )  
+I'm planning on moving my projects to Codeberg ( since I don't want any AI judging my code haha )  
 So, on GitHub, It'll be just a showcase. The main repo ( with Issues, PR's ) is on [Codeberg](https://codeberg.org/jwe/ansui)  
