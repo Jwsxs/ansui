@@ -1,4 +1,7 @@
-# ANSUI
+# ansui
+
+Terminal GUI library for better handling of interface on terminals
+
 Stands for ANSII TUI
 
 ## ABOUT IT
