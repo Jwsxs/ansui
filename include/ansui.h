@@ -21,7 +21,7 @@ typedef enum {
 	//ANSUI_FLAG_DEBUG	= 0b0000u, // TODO: Find any use for this => or just remove it total
 
 	ANSUI_FLAG_INPUT	= 0b0001u,
-	ANSUI_FLAG_VIDEO	= 0b0010u, // TODO: Can probably add texture mapping support
+	// ANSUI_FLAG_VIDEO	= 0b0010u, // TODO: texture mapping support
 } ANSUI_FLAG;
 
 void* ansuiInit(ANSUI_FLAG flag);
@@ -212,7 +212,7 @@ int ansuiQuit();
 
 // === X86
 
-int8_t __check_flag_bit(int8_t flag);
+int8_t __check_flag_bit(int8_t flag, int8_t bitn);
 
 // === RENDER
 

@@ -38,8 +38,6 @@ static int __oldf;
 
 static struct termios __newt;
 
-static int __termiAttrWasChanged = 0;
-
 static void __configKeyb() {
 	tcgetattr(STDIN_FILENO, &__oldt);
 	// Save default terminal configs
@@ -66,19 +64,18 @@ static struct timespec __lastTick, __curntTick;
 void* ansuiInit(ANSUI_FLAG flag) {
 	// NOTE: Initialization consists on retrieving terminal info, like TIOCGWINSZ
 	//	 Getting to know $HOME, current $PATH, probably some user info and other variables
-	switch (flag) {
-		// TODO: Switch in case passing, for example, any ANSUI_FLAG that can change our terminal info
-		// TODO: setTermSize() with TIOCSWIN
-		case ANSUI_FLAG_INPUT:
-			__termiAttrWasChanged = 1;
-			__configKeyb();
+	for (int8_t i = 0; i < 8; i++) {
+		if (__check_flag_bit(flag, i)) {
+			switch (i) {
+				case 0: // INPUT
+					__configKeyb();
 
-			clock_gettime(CLOCK_MONOTONIC, &__lastTick);
-			break;
-
-		default:
-		case ANSUI_FLAG_NONE: // Normal default initialization
-			break;
+					clock_gettime(CLOCK_MONOTONIC, &__lastTick);
+					break;
+				case 1: // TODO: TEXTURE MAPPING
+					break;
+			}
+		}
 	}
 
 	// DONE: Enforcing ansuiInit() is called => later use on ansuiGetInput() and ansuiQuit()
@@ -164,18 +161,17 @@ ANSUI_WIN* ansuiCreateWindow(ANSUI_WIN_CONFIG* cfg, ANSUI_WIN_FLAG flag) {
 
 	for (int8_t i = 0; i < 8; i++) {
 		// starting from 0, checking each ANSUI_WIN_FLAG
-		if (__check_flag_bit(flag)) {
+		if (__check_flag_bit(flag, i)) {
 			switch (i) {
-				case 1:
+				case 0: // bit 0
 					__ansuiResizeWinOutOfBorder(win);
 					break;
-				case 2:
+				case 1:
 					win->cfg->x = (int16_t)((double)ws.ws_col / 2 - (double)win->cfg->w / 2);
 					win->cfg->y = (int16_t)((double)ws.ws_row / 2 - (double)win->cfg->h / 2);
 					break;
 			}
 		}
-		flag = flag >> 1;
 	}
 
 	__ansuiFillPixelArray(win->cfg->w * win->cfg->h, win->pxa, win->cfg);
@@ -195,17 +191,13 @@ int ansuiWinDestroy(ANSUI_WIN *win) {
 }
 
 int ansuiQuit() {
-	printf("\033[0m");
+	// printf("\033[0m");
 
 	// Free memory got from ansuiInit();
 	close(fd); // file descriptor
 
-	// HACK: Turning off changed configs on ansuiInit();
-
-	if (__termiAttrWasChanged) {
-		tcsetattr(STDIN_FILENO, 0, &__oldt);
-		fcntl(STDIN_FILENO, F_SETFL, __oldf);
-	}
+	tcsetattr(STDIN_FILENO, 0, &__oldt);
+	fcntl(STDIN_FILENO, F_SETFL, __oldf);
 
 	return ANSUI_SUCCESS;
 }
@@ -269,7 +261,7 @@ int ansuiRender(ANSUI_WIN* win) {
 	fb += snprintf(buffer + fb, bufsz - fb, "%s", "\n");
 	fputs(buffer, stdout);
 	
-	// HACK: Free buffer for use of it again on a next render calls.
+	//	Free buffer for use of it again on a next render calls.
 	//	Although shadowing is quite reinforced there
 	//	Save memory space
 	free(buffer);
