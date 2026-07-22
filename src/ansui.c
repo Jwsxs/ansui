@@ -162,17 +162,20 @@ ANSUI_WIN* ansuiCreateWindow(ANSUI_WIN_CONFIG* cfg, ANSUI_WIN_FLAG flag) {
 
 	win->pxa = malloc(sizeof(ANSUI_PIXEL) * win->cfg->w * win->cfg->h);
 
-	switch (flag) {
-		case ANSUI_WIN_FLAG_RESIZE: // HACK: Check commit 034b211's file ./demos/window => auto resizing is breaking the render
-			__ansuiResizeWinOutOfBorder(win);
-			break;
-		case ANSUI_WIN_FLAG_POS_CENTERED:
-			win->cfg->x = (double)ws.ws_col / 2 - (double)win->cfg->w / 2;
-			win->cfg->y = ws.ws_row / 2 - win->cfg->y / 2;
-			break;
-		default:
-		case ANSUI_WIN_FLAG_NONE:
-			break;
+	for (int8_t i = 0; i < 8; i++) {
+		// starting from 0, checking each ANSUI_WIN_FLAG
+		if (__check_flag_bit(flag)) {
+			switch (i) {
+				case 1:
+					__ansuiResizeWinOutOfBorder(win);
+					break;
+				case 2:
+					win->cfg->x = (int16_t)((double)ws.ws_col / 2 - (double)win->cfg->w / 2);
+					win->cfg->y = (int16_t)((double)ws.ws_row / 2 - (double)win->cfg->h / 2);
+					break;
+			}
+		}
+		flag = flag >> 1;
 	}
 
 	__ansuiFillPixelArray(win->cfg->w * win->cfg->h, win->pxa, win->cfg);

@@ -16,19 +16,12 @@
 #define ANSUI_INIT_H
 #ifdef ANSUI_INIT_H
 
-// QT: Not being used, what to do?
-/*
-extern struct {
-	struct winsize* ws; // Stuff retrieved from getTermSize() => ./src/ansui_init.c
-} ANSUI_UINFO;
-*/
-
 typedef enum {
-	ANSUI_FLAG_NONE		= 0x0000,
-	ANSUI_FLAG_DEBUG	= 0xf000,
+	ANSUI_FLAG_NONE		= 0b0000u,
+	//ANSUI_FLAG_DEBUG	= 0b0000u, // TODO: Find any use for this => or just remove it total
 
-	ANSUI_FLAG_INPUT	= 0x0001,
-	// ANSUI_FLAG_VIDEO	= 0x0002, // TODO: Can probably add texture mapping support
+	ANSUI_FLAG_INPUT	= 0b0001u,
+	ANSUI_FLAG_VIDEO	= 0b0010u, // TODO: Can probably add texture mapping support
 } ANSUI_FLAG;
 
 void* ansuiInit(ANSUI_FLAG flag);
@@ -166,15 +159,25 @@ typedef struct ANSUI_CONFIG_GLOBAL {
  * YOU CAN MOVE / INTERACT WITH THEM BY JUST MESSING WITH THEM CFGs
 */
 
+// === OBJECT
+
+typedef struct ANSUI_OBJECT_CONFIG {
+	int16_t x, y;
+	int16_t w, h;
+	int8_t c;
+} ANSUI_OBJECT_CONFIG;
+
+typedef struct ANSUI_OBJECT {
+
+} ANSUI_OBJECT;
+
 // === WINDOW
 
 // NOTE: First create a window config, later on apply it on a window
 typedef struct ANSUI_WIN_CONFIG {
-	int x;// = 0;
-	int y;// = 0;
-	int w;// = 25;
-	int h;// = 10;
-	char c;// = ' ';
+	int16_t x, y;
+	int16_t w, h;
+	int8_t c;
 	ANSUI_PIXEL_CH_COLOR char_color;// = ANSUI_PIXEL_RESET_COLOR;
 	ANSUI_PIXEL_BG_COLOR bg_color;// = ANSUI_PIXEL_COLOR_BG_BRED;
 } ANSUI_WIN_CONFIG;
@@ -193,9 +196,10 @@ typedef struct ANSUI_WIN {
 //	 	    0x00000008
 //	 Or something like that
 typedef enum {
-	ANSUI_WIN_FLAG_RESIZE,
-	ANSUI_WIN_FLAG_POS_CENTERED,
-	ANSUI_WIN_FLAG_NONE,
+	ANSUI_WIN_FLAG_NONE	= 0b0000u,
+	
+	ANSUI_WIN_FLAG_AUTO_RESIZE	= 0b0001u,
+	ANSUI_WIN_FLAG_POS_CENTERED	= 0b0010u,
 } ANSUI_WIN_FLAG;
 
 void ansuiSetFlags(void* cfg, ...);
@@ -205,6 +209,10 @@ ANSUI_WIN* ansuiCreateWindow(ANSUI_WIN_CONFIG* cfg, ANSUI_WIN_FLAG flag);
 int ansuiWinDestroy(ANSUI_WIN* win);
 
 int ansuiQuit();
+
+// === X86
+
+int8_t __check_flag_bit(int8_t flag);
 
 // === RENDER
 

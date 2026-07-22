@@ -1,10 +1,16 @@
 #!/bin/bash
 
 SRC=ansui.c
+ASM_SRC=ansuix86.S
 
 if [ "$#" -eq 0 ]; then
 	echo -e "Provide one demo from:"
 	ls .
+	exit 1
+fi
+
+if [ ! -f "$1" ]; then
+	echo -e "$1 not found."
 	exit 1
 fi
 
@@ -15,11 +21,7 @@ if [ -f "$OBJ" ]; then
 	rm "$OBJ"
 fi
 
-if [ -f "$1" ]; then
-	gcc "$1" "../src/$SRC" -lm -o "$OBJ"
-else
-	echo -e "$1 not found"
-fi
+gcc "$1" "../src/$SRC" "../src/$ASM_SRC" -lm -o "$OBJ" || exit 1
 
 if [ -f "$OBJ" ]; then
 	echo -e "Running \033[1m$1\033[0m"
