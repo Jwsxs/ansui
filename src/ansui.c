@@ -2,18 +2,20 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/ioctl.h>
 
 #include "../include/ansui.h"
 
 /*
- * AS A MONO-HEADER LIBRARY,
- == ALL INTERNAL FUNCTIONS STARTS WITH __
- == ALL FOR PUBLIC USE IS NORMAL, SELF-INDUCING
- == all functions start with ansui#();
+	AS A MONO-HEADER LIBRARY,
+	== ALL INTERNAL FUNCTIONS STARTS WITH __
+	== ALL FOR PUBLIC USE IS NORMAL, SELF-INDUCING
+	== all functions start with ansui#();
 */
 
 static struct ANSUI_CONFIG_GLOBAL glob_cfg;
-static int __debugMode = 1; // Could be changed
+static int8_t __debugMode = 0; // Could be changed
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -36,54 +38,25 @@ static struct winsize __ansuiGetTermSize() {
 static struct termios __oldt;
 static int __oldf;
 
-static struct termios __newt;
+static void __getTerminalConfig() {
+	// Retrieve default flags and terminal config
+	tcgetattr(fd, &__oldt);
+	__oldf = fcntl(fd, F_GETFL, 0);
+}
 
-static void __configKeyb() {
-	tcgetattr(STDIN_FILENO, &__oldt);
+
+// Only call this if ANSUI_FLAG_INPUT is set
+static void __setTerminalConfigInputMode() {
 	// Save default terminal configs
-	__newt = __oldt;
+	struct termios __newt = __oldt;
 	
 	// Sets off ICANON and ECHO
 	__newt.c_lflag &= ~(ICANON | ECHO);
 
-	// Retrieve default flags
-	__oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
-	
 	// Sets them attributes as the same as __newt
-	tcsetattr(STDIN_FILENO, 0, &__newt);
+	tcsetattr(fd, 0, &__newt);
 	// And flags with no block, change it at current time
-	fcntl(STDIN_FILENO, F_SETFL, __oldf | O_NONBLOCK);
-}
-
-#include <time.h>
-
-static struct timespec __lastTick, __curntTick;
-
-// NOTE: We will have struct winsize at a global scope, outside this local function
-//	 Therefore, we'd be returning a pointer to this struct
-void* ansuiInit(ANSUI_FLAG flag) {
-	// NOTE: Initialization consists on retrieving terminal info, like TIOCGWINSZ
-	//	 Getting to know $HOME, current $PATH, probably some user info and other variables
-	for (int8_t i = 0; i < 8; i++) {
-		if (__check_flag_bit(flag, i)) {
-			switch (i) {
-				case 0: // INPUT
-					__configKeyb();
-
-					clock_gettime(CLOCK_MONOTONIC, &__lastTick);
-					break;
-				case 1: // TODO: TEXTURE MAPPING
-					break;
-			}
-		}
-	}
-
-	// DONE: Enforcing ansuiInit() is called => later use on ansuiGetInput() and ansuiQuit()
-	//	Save old settings -> we'll be changing terminal's modes
-	ws = __ansuiGetTermSize(); // This way we get info about ROWS, COLS
-
-	// Returning only &ws since that's all it's needed to return => input keyboard should be fine everywhere
-	return &ws;
+	fcntl(fd, F_SETFL, __oldf | O_NONBLOCK);
 }
 
 // === KEYBOARD
@@ -97,8 +70,8 @@ ANSUI_KEY ansuiGetKey() {
 
 // === ATTRIBUTES
 
-static ANSUI_WIN_CONFIG* __loadWinDefaultConfig() {
-	ANSUI_WIN_CONFIG* cfg = malloc(sizeof(ANSUI_WIN_CONFIG));
+static ANSUI_CONFIG* __loadWinDefaultConfig() {
+	ANSUI_CONFIG* cfg = malloc(sizeof(ANSUI_CONFIG));
 	cfg->x = 0;
 	cfg->y = 0;
 	cfg->w = 25;
@@ -111,7 +84,7 @@ static ANSUI_WIN_CONFIG* __loadWinDefaultConfig() {
 }
 
 void* ansuiLoadDefaultConfig(ANSUI_LOAD_ATTR attr) {
-	ANSUI_WIN_CONFIG* win_cfg;
+	ANSUI_CONFIG* win_cfg;
 	// HACK: MAYBE USE THOSE BITS CHECKER TO GET THEM VALUES
 	switch (attr) {
 		case ANSUI_LOAD_GLOBAL_ATTR:
@@ -123,7 +96,7 @@ void* ansuiLoadDefaultConfig(ANSUI_LOAD_ATTR attr) {
 	}
 }
 
-// ===
+// === UTIL
 
 static void __ansuiResizeWinOutOfBorder(ANSUI_WIN* win) {
 	if (win->cfg->w <= ws.ws_col && win->cfg->x + win->cfg->w > ws.ws_col) {
@@ -143,7 +116,9 @@ static void __ansuiResizeWinOutOfBorder(ANSUI_WIN* win) {
 }
 
 // HACK: BOTH OF THESE
-static void __ansuiFillPixelArray(int size, ANSUI_PIXEL* pxa, ANSUI_WIN_CONFIG* cfg) {
+static void __ansuiFillPixelArray(ANSUI_CONFIG* cfg, ANSUI_PIXEL* pxa) {
+	int16_t size = cfg->w * cfg->h;
+
 	for (int i = 0; i < size; i++) {
 		pxa[i].c = cfg->c;
 		pxa[i].char_color = cfg->char_color;
@@ -151,34 +126,44 @@ static void __ansuiFillPixelArray(int size, ANSUI_PIXEL* pxa, ANSUI_WIN_CONFIG* 
 	}
 }
 
+// === OBJECT
+
+ANSUI_OBJECT *ansuiCreateObject(ANSUI_CONFIG *cfg) {
+	ANSUI_OBJECT *obj = malloc(sizeof(ANSUI_OBJECT));
+	obj->cfg = cfg;
+
+	obj->pxa = malloc(sizeof(ANSUI_PIXEL) * obj->cfg->w * obj->cfg->h);
+
+	// QT: Should object have any flags?
+
+	__ansuiFillPixelArray(obj->cfg, obj->pxa);
+	return obj;
+}
+
+// === WINDOW
+
 // HACK: Will be letting this one until some more advanced/complex stuff (for me) comes upon my mind and I have to remake it by a whole
-ANSUI_WIN* ansuiCreateWindow(ANSUI_WIN_CONFIG* cfg, ANSUI_WIN_FLAG flag) {
+ANSUI_WIN* ansuiCreateWindow(ANSUI_CONFIG* cfg, ANSUI_WIN_FLAG flag) {
 	// NOTE: When applying win = cfg, segfault occurs, even tho ANSUI_WIN is ANSUI_CONFIG_WINDOW; no idea
 	ANSUI_WIN* win = malloc(sizeof(ANSUI_WIN));
 	win->cfg = cfg;
 
 	win->pxa = malloc(sizeof(ANSUI_PIXEL) * win->cfg->w * win->cfg->h);
+	win->prev_pxa = malloc(sizeof(ANSUI_PIXEL) * win->cfg->w * win->cfg->h);
 
-	for (int8_t i = 0; i < 8; i++) {
-		// starting from 0, checking each ANSUI_WIN_FLAG
-		if (__check_flag_bit(flag, i)) {
-			switch (i) {
-				case 0: // bit 0
-					__ansuiResizeWinOutOfBorder(win);
-					break;
-				case 1:
-					win->cfg->x = (int16_t)((double)ws.ws_col / 2 - (double)win->cfg->w / 2);
-					win->cfg->y = (int16_t)((double)ws.ws_row / 2 - (double)win->cfg->h / 2);
-					break;
-			}
-		}
+	if (flag & ANSUI_WIN_FLAG_AUTO_RESIZE) {
+		__ansuiResizeWinOutOfBorder(win);
 	}
 
-	__ansuiFillPixelArray(win->cfg->w * win->cfg->h, win->pxa, win->cfg);
+	if (flag & ANSUI_WIN_FLAG_POS_CENTERED) {
+		win->cfg->x = (int16_t)((double)ws.ws_col / 2 - (double)win->cfg->w / 2);
+		win->cfg->y = (int16_t)((double)ws.ws_row / 2 - (double)win->cfg->h / 2);
+	}
+
+	__ansuiFillPixelArray(win->cfg, win->pxa);
 	// free(cfg);
 	return win;
 }
-
 
 int ansuiWinDestroy(ANSUI_WIN *win) {
 	// Every malloc on *win is:
@@ -190,21 +175,51 @@ int ansuiWinDestroy(ANSUI_WIN *win) {
 	return ANSUI_SUCCESS;
 }
 
+#include <time.h>
+
+static struct timespec __lastTick, __curntTick;
+
+// NOTE: We will have struct winsize at a global scope, outside this local function
+//	 Therefore, we'd be returning a pointer to this struct
+struct winsize* ansuiInit(ANSUI_FLAG flag) {
+	__getTerminalConfig();
+	// NOTE: Initialization consists on retrieving terminal info, like TIOCGWINSZ
+	//	 Getting to know $HOME, current $PATH, probably some user info and other variables
+	
+	if (flag & ANSUI_FLAG_DEBUG) {
+		__debugMode = 1;
+	}
+
+	if (flag & ANSUI_FLAG_INPUT) {
+		__setTerminalConfigInputMode();
+	}
+
+	clock_gettime(CLOCK_MONOTONIC, &__lastTick);
+
+	// DONE: Enforcing ansuiInit() is called => later use on ansuiGetInput() and ansuiQuit()
+	//	Save old settings -> we'll be changing terminal's modes
+	ws = __ansuiGetTermSize(); // This way we get info about ROWS, COLS
+
+	// Returning only &ws since that's all it's needed to return => input keyboard should be fine everywhere
+	return &ws;
+}
+
 int ansuiQuit() {
-	// printf("\033[0m");
+	// QT: Should QUIT also clear the screen? I'm saying it should not
+	// printf("\e[%dm\e[0;0H", BG_RESET);
+
+	tcsetattr(fd, 0, &__oldt);
+	fcntl(fd, F_SETFL, __oldf);
 
 	// Free memory got from ansuiInit();
 	close(fd); // file descriptor
-
-	tcsetattr(STDIN_FILENO, 0, &__oldt);
-	fcntl(STDIN_FILENO, F_SETFL, __oldf);
 
 	return ANSUI_SUCCESS;
 }
 
 // === RENDER
 
-int __equalPixels(ANSUI_PIXEL px1, ANSUI_PIXEL px2) {
+int8_t __cmpPixels(ANSUI_PIXEL px1, ANSUI_PIXEL px2) {
 	if (px1.c != px2.c) return 0;
 	if (px1.bg_color != px2.bg_color) return 0;
 	if (px1.char_color != px2.char_color) return 0;
@@ -222,41 +237,31 @@ static float __calcGetFPS() {
 	return (1.0 / __d);
 }
 
-// NOTE: Probably need of a custom made cursor movement
 int ansuiRender(ANSUI_WIN* win) {
-	win->prev_pxa = malloc(sizeof(ANSUI_PIXEL) * win->cfg->w * win->cfg->h); // Set them as the same size, so no error
-
 	// NOTE: Basically all we need is a formated buffer and therefore a pointer to it
 	int char_bufsz = win->cfg->w * win->cfg->h; // NOTE: Must be +1 when sent to snprintf();
-	int ansi_bufsz = char_bufsz * 18; // 9 => NOTE: Max ANSII String Size => \e[0;107m for example, has 9 chars
+	int ansi_bufsz = char_bufsz * 27; // 9 => NOTE: Max ANSII String Size => \e[0;107m for example, has 9 chars
+	#define ANSUI_DEBUG_LINE_BUFSZ 128
 	int bufsz = char_bufsz + ansi_bufsz + 1; // NOTE: At the end, just append '\0', since buffer has to be detected as a string
 						 // NOTE :For later on fputs(buffer, stdout);
 
 	// Buffer size must be sizeof(char) * bufsz + size of
 	char* buffer = malloc(sizeof(char) * bufsz);
 	int fb = 0;
-
 	int i = 0;
+	int px_amnt = 0;
 
-	// DONE: Probably faster, in need to make any fps counter haha
 	for (int h = 0; h < win->cfg->h; h++) {
-		int px_amnt = 0;
-		// fb += snprintf(buffer + fb, bufsz - fb, "", win->cfg->y + h, win->cfg->x); // change cursor position | same as setting x and y
 		for (int w = 0; w < win->cfg->w; w++) {
-			// HACK: After this appending, we check:
-			// 	 In case it's different, we just remove from it (?)
-			// 	 Do some sort of i--
-			if (__equalPixels(win->prev_pxa[i], win->pxa[i]) == 1) {
-				fb += snprintf(buffer + fb, bufsz - fb, "\033[1C");
-			} else {
-				fb += snprintf(buffer + fb, bufsz - fb, "\033[%dm\033[%dm%c", win->pxa[i].bg_color, win->pxa[i].char_color, win->pxa[i].c);
+			if (__cmpPixels(win->prev_pxa[i], win->pxa[i]) != 1) {
+				fb += snprintf(buffer + fb, bufsz - fb, "\e[%d;%dH\033[%dm\033[%dm%c", win->cfg->y + h, win->cfg->x + w, win->pxa[i].bg_color, win->pxa[i].char_color, win->pxa[i].c);
 				px_amnt++;
 			}
 			i++;
 		}
-		if (__debugMode)
-			fb += snprintf(buffer + fb, bufsz - fb, "\e[0m\033[%dHPrinted %d pixels | FPS: %f\e[%d;%dH", ws.ws_col, px_amnt, __calcGetFPS(), win->cfg->y + h, win->cfg->x);
 	}
+	if (__debugMode)
+		fb += snprintf(buffer + fb, bufsz - fb, "\e[0m\e[%d;1HPrinted %d pixels | FPS: %f", ws.ws_row, px_amnt, __calcGetFPS());
 
 	fb += snprintf(buffer + fb, bufsz - fb, "%s", "\n");
 	fputs(buffer, stdout);
@@ -265,8 +270,8 @@ int ansuiRender(ANSUI_WIN* win) {
 	//	Although shadowing is quite reinforced there
 	//	Save memory space
 	free(buffer);
-	
-	win->prev_pxa = win->pxa;
+
+	memcpy(win->prev_pxa, win->pxa, sizeof(ANSUI_PIXEL) * win->cfg->w * win->cfg->h);
 	return ANSUI_SUCCESS;
 }
 

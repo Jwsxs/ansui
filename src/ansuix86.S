@@ -1,4 +1,4 @@
-.text # for gdb
+.text
 .globl __check_flag_bit
 
 # %di => least significant bit will be checked here
@@ -6,10 +6,10 @@
 __check_flag_bit:
     xor %al, %al
 _l1:
-    bt  %si, %di # bit test 0 (1st least significant bit) on %di
+    bt  %si, %di # bit test %si (n least significant bit) on %di
     jnc  _ret_0 # flag is not set
-    mov $1, %al
+    mov $1, %al # returning true
     ret
 
 _ret_0:
-    ret
+    ret # if not keep %al 0 and return false

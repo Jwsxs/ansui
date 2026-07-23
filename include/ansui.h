@@ -20,11 +20,12 @@ typedef enum {
 	ANSUI_FLAG_NONE		= 0b0000u,
 	//ANSUI_FLAG_DEBUG	= 0b0000u, // TODO: Find any use for this => or just remove it total
 
-	ANSUI_FLAG_INPUT	= 0b0001u,
-	// ANSUI_FLAG_VIDEO	= 0b0010u, // TODO: texture mapping support
+	ANSUI_FLAG_DEBUG	= 0b0001u,
+	ANSUI_FLAG_INPUT	= 0b0010u,
+	ANSUI_FLAG_VIDEO	= 0b0100u, // TODO: texture mapping support
 } ANSUI_FLAG;
 
-void* ansuiInit(ANSUI_FLAG flag);
+struct winsize* ansuiInit(ANSUI_FLAG flag);
 
 #endif // ANSUI_INIT_H
 
@@ -146,65 +147,45 @@ void* ansuiLoadDefaultConfig(ANSUI_LOAD_ATTR attr);
 
 // === CONFIG
 
-// HACK: FOR USE GENERICALLY
-typedef void* ANSUI_CONFIG;
-
-typedef struct ANSUI_CONFIG_GLOBAL {
-	ANSUI_PIXEL_BG_COLOR clear_color;// = ANSUI_PIXEL_RESET_COLOR; => HACK: CLEAR IT ON BACKGROUND
-} ANSUI_CONFIG_GLOBAL;
-
-// === ENTITIES / WIDGET / OBJECT
-/* NOTE:
- * KEEPING ALL OBJECTS / WIDGETS / ENTITIES AS A WINDOW FOR MY OWN SAKE
- * YOU CAN MOVE / INTERACT WITH THEM BY JUST MESSING WITH THEM CFGs
-*/
-
-// === OBJECT
-
-typedef struct ANSUI_OBJECT_CONFIG {
-	int16_t x, y;
-	int16_t w, h;
-	int8_t c;
-} ANSUI_OBJECT_CONFIG;
-
-typedef struct ANSUI_OBJECT {
-
-} ANSUI_OBJECT;
-
-// === WINDOW
-
-// NOTE: First create a window config, later on apply it on a window
-typedef struct ANSUI_WIN_CONFIG {
+// NOTE: First create a config, later on apply it on a window or object
+typedef struct ANSUI_CONFIG {
 	int16_t x, y;
 	int16_t w, h;
 	int8_t c;
 	ANSUI_PIXEL_CH_COLOR char_color;// = ANSUI_PIXEL_RESET_COLOR;
 	ANSUI_PIXEL_BG_COLOR bg_color;// = ANSUI_PIXEL_COLOR_BG_BRED;
-} ANSUI_WIN_CONFIG;
+} ANSUI_CONFIG;
+
+typedef struct ANSUI_CONFIG_GLOBAL {
+	ANSUI_PIXEL_BG_COLOR clear_color;// = ANSUI_PIXEL_RESET_COLOR; => HACK: CLEAR IT ON BACKGROUND
+} ANSUI_CONFIG_GLOBAL;
+
+// === OBJECT
+
+typedef struct ANSUI_OBJECT {
+	ANSUI_CONFIG* cfg;
+	struct ANSUI_PIXEL* pxa;
+	struct ANSUI_PIXEL* prev_pxa;
+} ANSUI_OBJECT;
+
+ANSUI_OBJECT* ansuiCreateObject(ANSUI_CONFIG* cfg);
+
+// === WINDOW
 
 typedef struct ANSUI_WIN {
-	ANSUI_WIN_CONFIG* cfg;
+	ANSUI_CONFIG* cfg;
 	struct ANSUI_PIXEL* pxa;
 	struct ANSUI_PIXEL* prev_pxa;
 } ANSUI_WIN;
 
-// TODO: SET THESE FLAGS AS BITS
-//	 JUST LIKE: 0x00000000 first one
-//	 	    0x00000001 second one
-//	 	    0x00000002 third
-//	 	    0x00000004
-//	 	    0x00000008
-//	 Or something like that
 typedef enum {
-	ANSUI_WIN_FLAG_NONE	= 0b0000u,
+	ANSUI_WIN_FLAG_NONE			= 0b0000u,
 	
 	ANSUI_WIN_FLAG_AUTO_RESIZE	= 0b0001u,
 	ANSUI_WIN_FLAG_POS_CENTERED	= 0b0010u,
 } ANSUI_WIN_FLAG;
 
-void ansuiSetFlags(void* cfg, ...);
-
-ANSUI_WIN* ansuiCreateWindow(ANSUI_WIN_CONFIG* cfg, ANSUI_WIN_FLAG flag);
+ANSUI_WIN* ansuiCreateWindow(ANSUI_CONFIG* cfg, ANSUI_WIN_FLAG flag);
 
 int ansuiWinDestroy(ANSUI_WIN* win);
 

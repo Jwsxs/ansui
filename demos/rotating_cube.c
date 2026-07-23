@@ -62,11 +62,11 @@ static void clear_pxa(ANSUI_WIN* win) {
 }
 
 int main() {
-	struct winsize* ws = (struct winsize*)ansuiInit(ANSUI_FLAG_INPUT);
+	struct winsize* ws = (struct winsize*)ansuiInit(ANSUI_FLAG_INPUT | ANSUI_FLAG_DEBUG);
 	int term_w = ws->ws_col;
 	int term_h = ws->ws_row;
 
-	ANSUI_WIN_CONFIG* cfg = ansuiLoadDefaultConfig(ANSUI_LOAD_WINDOW_ATTR);
+	ANSUI_CONFIG* cfg = ansuiLoadDefaultConfig(ANSUI_LOAD_WINDOW_ATTR);
 	cfg->x = 0;
 	cfg->y = 0;
 	cfg->w = term_w - 1;
@@ -82,7 +82,7 @@ int main() {
 
 	int running = 1;
 	while (running) {
-		ansuiClear(BG_BBLACK);
+		ansuiClear(BG_RESET);
 		
 		if (ansuiGetKey() == ANSUI_KEY_Q) running = 0;
 		clear_pxa(win);
