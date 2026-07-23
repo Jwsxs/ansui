@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SRC=ansui.c
-ASM_SRC=ansuix86.S
+ASM_SRC=ansuix86.s
 
 if [ "$#" -eq 0 ]; then
 	echo -e "Provide one demo from:"

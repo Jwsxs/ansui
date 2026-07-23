@@ -17,15 +17,16 @@
 #ifdef ANSUI_INIT_H
 
 typedef enum {
-	ANSUI_FLAG_NONE		= 0b0000u,
-	//ANSUI_FLAG_DEBUG	= 0b0000u, // TODO: Find any use for this => or just remove it total
+  ANSUI_FLAG_NONE = 0b0000u,
+  // ANSUI_FLAG_DEBUG	= 0b0000u, // TODO: Find any use for this => or just
+  // remove it total
 
-	ANSUI_FLAG_DEBUG	= 0b0001u,
-	ANSUI_FLAG_INPUT	= 0b0010u,
-	ANSUI_FLAG_VIDEO	= 0b0100u, // TODO: texture mapping support
+  ANSUI_FLAG_DEBUG = 0b0001u,
+  ANSUI_FLAG_INPUT = 0b0010u,
+  ANSUI_FLAG_VIDEO = 0b0100u, // TODO: texture mapping support
 } ANSUI_FLAG;
 
-struct winsize* ansuiInit(ANSUI_FLAG flag);
+struct winsize *ansuiInit(ANSUI_FLAG flag);
 
 #endif // ANSUI_INIT_H
 
@@ -34,40 +35,38 @@ struct winsize* ansuiInit(ANSUI_FLAG flag);
 // QT: One function to whole keys pressed and released (?)
 // HACK: Check ansuiGetKey() => these are uppercase.
 // 	In case of ch > 97 (lowercase a), then subtract 32 from it
-typedef enum __KEYS {
-	ANSUI_KEY_NONE = 00,
-	ANSUI_KEY_A = 65,
-	ANSUI_KEY_B = 66,
-	ANSUI_KEY_C = 67,
-	ANSUI_KEY_D = 68,
-	ANSUI_KEY_E = 69,
-	ANSUI_KEY_F = 70,
-	ANSUI_KEY_G = 71,
-	ANSUI_KEY_H = 72,
-	ANSUI_KEY_I = 73,
-	ANSUI_KEY_J = 74,
-	ANSUI_KEY_K = 75,
-	ANSUI_KEY_L = 76,
-	ANSUI_KEY_M = 77,
-	ANSUI_KEY_N = 78,
-	ANSUI_KEY_O = 79,
-	ANSUI_KEY_P = 80,
-	ANSUI_KEY_Q = 81,
-	ANSUI_KEY_R = 82,
-	ANSUI_KEY_S = 83,
-	ANSUI_KEY_T = 84,
-	ANSUI_KEY_U = 85,
-	ANSUI_KEY_V = 86,
-	ANSUI_KEY_W = 87,
-	ANSUI_KEY_X = 88,
-	ANSUI_KEY_Y = 89,
-	ANSUI_KEY_Z = 90,
-} __KEYS;
+typedef enum ANSUI_KEY {
+  ANSUI_KEY_NONE = 00,
+  ANSUI_KEY_A = 65,
+  ANSUI_KEY_B = 66,
+  ANSUI_KEY_C = 67,
+  ANSUI_KEY_D = 68,
+  ANSUI_KEY_E = 69,
+  ANSUI_KEY_F = 70,
+  ANSUI_KEY_G = 71,
+  ANSUI_KEY_H = 72,
+  ANSUI_KEY_I = 73,
+  ANSUI_KEY_J = 74,
+  ANSUI_KEY_K = 75,
+  ANSUI_KEY_L = 76,
+  ANSUI_KEY_M = 77,
+  ANSUI_KEY_N = 78,
+  ANSUI_KEY_O = 79,
+  ANSUI_KEY_P = 80,
+  ANSUI_KEY_Q = 81,
+  ANSUI_KEY_R = 82,
+  ANSUI_KEY_S = 83,
+  ANSUI_KEY_T = 84,
+  ANSUI_KEY_U = 85,
+  ANSUI_KEY_V = 86,
+  ANSUI_KEY_W = 87,
+  ANSUI_KEY_X = 88,
+  ANSUI_KEY_Y = 89,
+  ANSUI_KEY_Z = 90,
+} ANSUI_KEY;
 
-// HACK:
-typedef __KEYS ANSUI_KEY;
-
-// HACK: Set each variant
+// NOTE: This could be used somehow
+// typedef __KEYS ANSUI_KEY;
 
 ANSUI_KEY ansuiGetKey();
 // === PIXEL
@@ -83,121 +82,121 @@ ANSUI_KEY ansuiGetKey();
 
 // ANSUI_SET_BG/CH_COLOR, BOLD/REGULAR, # (COLOR_RED/BLUE/GREEN)
 
-// HACK: MAYBE THIS WOULD SET DIFFERENCE BETWEEN cfg->char_color AND cfg->bg_color;
-// typedef const char* ANSUI_PIXEL_BG_COLOR;
-// typedef const char* ANSUI_PIXEL_CH_COLOR;
+// HACK: MAYBE THIS WOULD SET DIFFERENCE BETWEEN cfg->char_color AND
+// cfg->bg_color; typedef const char* ANSUI_PIXEL_BG_COLOR; typedef const char*
+// ANSUI_PIXEL_CH_COLOR;
 
-typedef enum ANSUI_PIXEL_CH_COLOR {
-	CH_RRED = 91,// = "\e[0;91m",
-	CH_RGREEN = 92,// = "\e[0;92m",
-	CH_RBLUE = 94,// = "\e[0;94m",
-	CH_RBLACK = 90,// = "\e[0;90m",
-	CH_RWHITE = 97,// = "\e[0;97m",
+typedef enum : uint8_t {
+  CH_RRED = 91,   // = "\e[0;91m",
+  CH_RGREEN = 92, // = "\e[0;92m",
+  CH_RBLUE = 94,  // = "\e[0;94m",
+  CH_RBLACK = 90, // = "\e[0;90m",
+  CH_RWHITE = 97, // = "\e[0;97m",
 
-	CH_BRED = 191,// = "\e[1;91m",
-	CH_BGREEN = 192,// = "\e[1;92m",
-	CH_BBLUE = 194,// = "\e[1;94m",
-	CH_BBLACK = 190,// = "\e[1;90m",
-	CH_BWHITE = 197,// = "\e[1;97m",
+  CH_BRED = 191,   // = "\e[1;91m",
+  CH_BGREEN = 192, // = "\e[1;92m",
+  CH_BBLUE = 194,  // = "\e[1;94m",
+  CH_BBLACK = 190, // = "\e[1;90m",
+  CH_BWHITE = 197, // = "\e[1;97m",
 } ANSUI_PIXEL_CH_COLOR;
 
-typedef enum ANSUI_PIXEL_BG_COLOR {
-	BG_RBLACK = 40,// = "\e[0;40m",
-	BG_RRED = 41,// = "\e[0;41m",
-	BG_RGREEN = 42,// = "\e[0;42m",
-	BG_RBLUE = 44,// = "\e[0;44m",
-	BG_RWHITE = 47,// = "\e[0;47m",
+typedef enum : uint8_t {
+  BG_RBLACK = 40, // = "\e[0;40m",
+  BG_RRED = 41,   // = "\e[0;41m",
+  BG_RGREEN = 42, // = "\e[0;42m",
+  BG_RBLUE = 44,  // = "\e[0;44m",
+  BG_RWHITE = 47, // = "\e[0;47m",
 
-	BG_BBLACK = 100,// = "\e[0;100m",
-	BG_BRED = 101,// = "\e[0;101m",
-	BG_BGREEN = 102,// = "\e[0;102m",
-	BG_BBLUE = 104,// = "\e[0;104m",
-	BG_BWHITE = 107,// = "\e[0;107m",
+  BG_BBLACK = 100, // = "\e[0;100m",
+  BG_BRED = 101,   // = "\e[0;101m",
+  BG_BGREEN = 102, // = "\e[0;102m",
+  BG_BBLUE = 104,  // = "\e[0;104m",
+  BG_BWHITE = 107, // = "\e[0;107m",
 
-	BG_RESET = 0,
+  BG_RESET = 0,
 } ANSUI_PIXEL_BG_COLOR;
 
 // typedef const char* ANSUI_PIXEL_COLOR;
 
-typedef struct ANSUI_PIXEL {
-	char c;
-	ANSUI_PIXEL_CH_COLOR char_color;
-	ANSUI_PIXEL_BG_COLOR bg_color;
+// NOTE:
+// This could also be: typedef struct __attribute__((packed)) {} ANSUI_PIXEL;
+typedef struct {
+  uint8_t c;
+  ANSUI_PIXEL_CH_COLOR char_color;
+  ANSUI_PIXEL_BG_COLOR bg_color;
 } ANSUI_PIXEL;
 
-// PERF: Don't think this is needed, just use any array of px and pull stuff from them
-/*
-typedef struct {
-	int size;
-	ANSUI_PIXEL* px;
-} ANSUI_PIXEL_ARRAY;
-*/
-
 // === ATTRIBUTES
-// NOTE: These attributes are like flags, not variables to be handled but something
+// NOTE: These attributes are like flags, not variables to be handled but
+// something
 //	 that's used as a way of giving it the life it deserves.
 
 // NOTE: Which config attribute to load to
 typedef enum {
-	ANSUI_LOAD_GLOBAL_ATTR,
-	ANSUI_LOAD_WINDOW_ATTR,
+  ANSUI_LOAD_GLOBAL_ATTR,
+  ANSUI_LOAD_WINDOW_ATTR,
 } ANSUI_LOAD_ATTR;
 
-void* ansuiLoadDefaultConfig(ANSUI_LOAD_ATTR attr);
+void *ansuiLoadDefaultConfig(ANSUI_LOAD_ATTR attr);
 
 // === CONFIG
 
 // NOTE: First create a config, later on apply it on a window or object
 typedef struct ANSUI_CONFIG {
-	int16_t x, y;
-	int16_t w, h;
-	int8_t c;
-	ANSUI_PIXEL_CH_COLOR char_color;// = ANSUI_PIXEL_RESET_COLOR;
-	ANSUI_PIXEL_BG_COLOR bg_color;// = ANSUI_PIXEL_COLOR_BG_BRED;
+  int16_t x, y;
+  int16_t w, h;
+  int8_t c;
+  ANSUI_PIXEL_CH_COLOR char_color; // = ANSUI_PIXEL_RESET_COLOR;
+  ANSUI_PIXEL_BG_COLOR bg_color;   // = ANSUI_PIXEL_COLOR_BG_BRED;
 } ANSUI_CONFIG;
 
 typedef struct ANSUI_CONFIG_GLOBAL {
-	ANSUI_PIXEL_BG_COLOR clear_color;// = ANSUI_PIXEL_RESET_COLOR; => HACK: CLEAR IT ON BACKGROUND
+  ANSUI_PIXEL_BG_COLOR
+  clear_color; // = ANSUI_PIXEL_RESET_COLOR; => HACK: CLEAR IT ON BACKGROUND
 } ANSUI_CONFIG_GLOBAL;
 
 // === OBJECT
 
 typedef struct ANSUI_OBJECT {
-	ANSUI_CONFIG* cfg;
-	struct ANSUI_PIXEL* pxa;
-	struct ANSUI_PIXEL* prev_pxa;
+  ANSUI_CONFIG *cfg;
+  ANSUI_PIXEL *pxa;
+  ANSUI_PIXEL *prev_pxa;
 } ANSUI_OBJECT;
 
-ANSUI_OBJECT* ansuiCreateObject(ANSUI_CONFIG* cfg);
+ANSUI_OBJECT *ansuiCreateObject(ANSUI_CONFIG *cfg);
 
 // === WINDOW
 
 typedef struct ANSUI_WIN {
-	ANSUI_CONFIG* cfg;
-	struct ANSUI_PIXEL* pxa;
-	struct ANSUI_PIXEL* prev_pxa;
+  ANSUI_CONFIG *cfg;
+  ANSUI_PIXEL *pxa;
+  ANSUI_PIXEL *prev_pxa;
 } ANSUI_WIN;
 
 typedef enum {
-	ANSUI_WIN_FLAG_NONE			= 0b0000u,
-	
-	ANSUI_WIN_FLAG_AUTO_RESIZE	= 0b0001u,
-	ANSUI_WIN_FLAG_POS_CENTERED	= 0b0010u,
+  ANSUI_WIN_FLAG_NONE = 0b0000u,
+
+  ANSUI_WIN_FLAG_AUTO_RESIZE = 0b0001u,
+  ANSUI_WIN_FLAG_POS_CENTERED = 0b0010u,
 } ANSUI_WIN_FLAG;
 
-ANSUI_WIN* ansuiCreateWindow(ANSUI_CONFIG* cfg, ANSUI_WIN_FLAG flag);
+ANSUI_WIN *ansuiCreateWindow(ANSUI_CONFIG *cfg, ANSUI_WIN_FLAG flag);
 
-int ansuiWinDestroy(ANSUI_WIN* win);
+int ansuiWinDestroy(ANSUI_WIN *win);
 
 int ansuiQuit();
 
 // === X86
 
-int8_t __check_flag_bit(int8_t flag, int8_t bitn);
+// int8_t __check_flag_bit(int8_t flag, int8_t bitn);
 
 // === RENDER
 
-int ansuiRender(ANSUI_WIN* win);
+int8_t ansuiDrawLine(int8_t init_pos[2], int8_t end_pos[2]);
+
+/// Render only the differences between prev_pxa and pxa previously configured
+/// on create function. Could the return be somehow optimized?
+int8_t ansuiRender(ANSUI_WIN *win);
 
 // HACK: CLEAR COLOR MUST BE BACKGROUND
 void ansuiClear(ANSUI_PIXEL_BG_COLOR c); // clear whole terminal
